@@ -16,18 +16,17 @@ impl FileReader {
     pub fn read(input_file: &str) -> Result<ReadFileResult, Error> {
         let f = File::open(input_file)?;
         let file = BufReader::new(&f);
-        let raw_lines = file.lines();
         let mut lines = vec![];
         let mut errors = vec![];
 
         let mut number_of_relevant_lines = 0;
-        for line in raw_lines {
+        for line in file.lines() {
             let result = FileReader::read_line(line);
 
             match result {
                 Ok(i) => {
                     // The first match will be the header, collect only the remaining ones
-                    if number_of_relevant_lines > 1 {
+                    if number_of_relevant_lines != 0 {
                         lines.push(i);
                     }
                     number_of_relevant_lines += 1;
