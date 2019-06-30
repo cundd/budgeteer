@@ -4,6 +4,7 @@ use currency::Currency;
 use filter::Request;
 use calculator::Calculator;
 use invoice::invoice_type::InvoiceType;
+use month::Month;
 
 pub trait PrinterTrait {
     fn print_errors(&self, errors: Vec<Error>) {
@@ -25,6 +26,7 @@ pub trait PrinterTrait {
     fn print_filter_request(&self, filter_request: &Request) -> ();
 
     fn print_sum(&self, base_currency: &Currency, invoices: &Vec<Invoice>) -> ();
+    fn print_month_sum(&self, month: Month, base_currency: &Currency, invoices: &Vec<Invoice>) -> ();
 }
 
 pub struct Printer {}
@@ -48,7 +50,13 @@ impl Printer {
         ];
         for invoice_type in types {
             let sum = Calculator::sum_for_type(invoices, invoice_type);
-            println!("{}: {} {:.2}", invoice_type, base_currency, sum);
+            println!(
+                "{:width$}: {} {:.2}",
+                format!("{}", invoice_type),
+                base_currency,
+                sum,
+                width = 22
+            );
         }
     }
 
@@ -107,6 +115,16 @@ impl PrinterTrait for Printer {
         self.print_type_sum(base_currency, invoices);
         println!("--------------------------------");
         self.print_grand_total(base_currency, invoices);
+    }
+
+    fn print_month_sum(&self, month: Month, base_currency: &Currency, invoices: &Vec<Invoice>) -> () {
+        println!(
+            "{:width$}: {} {:.2}",
+            format!("{}", month),
+            base_currency,
+            Calculator::sum(invoices),
+            width = 12
+        );
     }
 }
 

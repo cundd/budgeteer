@@ -3,6 +3,7 @@ use std::str;
 use std::fmt;
 use invoice::invoice_type::InvoiceType;
 
+#[derive(Clone)]
 pub struct Request {
     year: Option<i32>,
     month: Option<u32>,
@@ -37,6 +38,26 @@ impl Request {
         let invoice_type = Request::parse_invoice_type(invoice_type);
 
         Ok(Request::new(year, month, day, invoice_type))
+    }
+
+    pub fn from_year_and_strings(
+        year: i32,
+        month: Option<&str>,
+        day: Option<&str>,
+        invoice_type: Option<&str>,
+    ) -> Result<Self, Error> {
+        let month = Request::parse_option_u32(month)?;
+        let day = Request::parse_option_u32(day)?;
+        let invoice_type = Request::parse_invoice_type(invoice_type);
+
+        Ok(Request::new(Some(year), month, day, invoice_type))
+    }
+
+    pub fn with_month(&self, month: u32) -> Self {
+        let mut clone = self.clone();
+        clone.month = Some(month);
+
+        clone
     }
 
     pub fn empty(&self) -> bool {

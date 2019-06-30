@@ -16,12 +16,13 @@ mod filter;
 mod currency;
 mod calculator;
 mod verbosity;
+mod month;
 
 use clap::{Arg, App, ArgMatches};
 use rate_provider::RateProvider;
 use amount_converter::AmountConverter;
 use invoice::Invoice;
-use error::Error;
+use error::{Error, Res};
 use filter::{Filter, Request};
 use file_reader::FileReader;
 use invoice::invoice_parser::InvoiceParser;
@@ -29,6 +30,7 @@ use currency::Currency;
 use std::collections::HashSet;
 use verbosity::Verbosity;
 use printer::{Printer, PrinterTrait};
+use chrono::{Datelike, Local};
 
 fn main() {
     let matches = App::new("Budgeteer")
@@ -80,34 +82,67 @@ fn execute(matches: ArgMatches) -> Result<(), Error> {
     let input_file = matches.value_of("input").unwrap();
 //    let rate_string = matches.value_of("rate").unwrap();
 //    let rate = get_rate(rate_string)?;
-    let filter_request = Request::from_strings(
-        matches.value_of("year"),
-        matches.value_of("month"),
-        matches.value_of("day"),
-        matches.value_of("type"),
-    )?;
+    let filter_request = build_filter_request(&matches)?;
 
     let printer = Printer::new();
 
-    let base_currency = Currency::from_string("€");
+    let base_currency = Currency::eur();
     let parser = InvoiceParser::new();
 
     let verbosity = Verbosity::from_int(matches.occurrences_of("v"));
     if verbosity >= Verbosity::Info {
         printer.print_filter_request(&filter_request);
     }
-    let invoices = get_filtered_invoices(
-        input_file,
-        filter_request,
-        &parser,
-        &base_currency,
-        &printer,
-    )?;
 
-    printer.print_invoices(&base_currency, &invoices);
-    printer.print_sum(&base_currency, &invoices);
+    let all_invoices = get_invoices(input_file, &parser, &base_currency, Some(&printer))?;
+
+
+    let invoices_to_print = if filter_request.empty() {
+        all_invoices
+    } else {
+        Filter::filter(&all_invoices, &filter_request)
+    };
+    printer.print_invoices(&base_currency, &invoices_to_print);
+
+
+    if filter_request.month().is_none() {
+        for month in 1..13 {
+            filter_and_print_month_sum(&matches, &printer, &base_currency, &invoices_to_print, month);
+        }
+        println!()
+    }
+    printer.print_sum(&base_currency, &invoices_to_print);
 
     Ok(())
+}
+
+fn filter_and_print_month_sum(matches: &ArgMatches, printer: &Printer, base_currency: &Currency, all_invoices: &Vec<Invoice>, month: u32) {
+    if let Ok(filter_request) = build_month_filter_request(&matches, month) {
+        let invoices = Filter::filter(&all_invoices, &filter_request);
+        printer.print_month_sum(month.into(), &base_currency, &invoices);
+    }
+}
+
+fn build_filter_request(matches: &ArgMatches) -> Res<Request> {
+    if matches.value_of("year").is_some() {
+        Request::from_strings(
+            matches.value_of("year"),
+            matches.value_of("month"),
+            matches.value_of("day"),
+            matches.value_of("type"),
+        )
+    } else {
+        Request::from_year_and_strings(
+            Local::now().year(),
+            matches.value_of("month"),
+            matches.value_of("day"),
+            matches.value_of("type"),
+        )
+    }
+}
+
+fn build_month_filter_request(matches: &ArgMatches, month: u32) -> Res<Request> {
+    Ok(build_filter_request(matches)?.with_month(month))
 }
 
 //fn get_rate(rate_string: &str) -> Result<f32, Error> {
@@ -120,18 +155,19 @@ fn execute(matches: ArgMatches) -> Result<(), Error> {
 //    }
 //}
 
-fn get_filtered_invoices(
+fn get_invoices(
     input_file: &str,
-    filter_request: Request,
     parser: &InvoiceParser,
     base_currency: &Currency,
-    printer: &Printer,
+    printer: Option<&Printer>,
 ) -> Result<Vec<Invoice>, Error> {
     let lines = FileReader::read(input_file)?;
     let result = parser.parse_lines(lines.lines);
     let invoices: Vec<Invoice> = result.invoices.into_iter().map(|(_, i)| i).collect();
 
-    printer.print_errors(result.errors);
+    if let Some(printer) = printer {
+        printer.print_errors(result.errors);
+    }
 
     if invoices.len() == 0 {
         return Ok(vec![]);
@@ -142,22 +178,10 @@ fn get_filtered_invoices(
         collect_currencies(&invoices))?;
 
     let amount_converter = AmountConverter::new(base_currency.to_owned(), rate_map);
-
-    if filter_request.empty() {
-        if invoices.len() == 0 {
-            println!("No invoices found");
-            Ok(vec![])
-        } else {
-            Ok(invoices.into_iter().map(|i| amount_converter.invoice_with_base_amount(&i)).collect())
-        }
+    if invoices.len() == 0 {
+        Ok(vec![])
     } else {
-        let invoices_filtered = Filter::filter(invoices, &filter_request);
-        if invoices_filtered.len() == 0 {
-            println!("No invoices found for filter `{}`", filter_request);
-            Ok(vec![])
-        } else {
-            Ok(invoices_filtered.into_iter().map(|i| amount_converter.invoice_with_base_amount(&i)).collect())
-        }
+        Ok(invoices.into_iter().map(|i| amount_converter.invoice_with_base_amount(&i)).collect())
     }
 }
 

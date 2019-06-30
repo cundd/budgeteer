@@ -1,4 +1,3 @@
-use amount_converter::AmountConverter;
 use invoice::Invoice;
 use error::Error;
 use chrono::NaiveDate;
@@ -34,16 +33,7 @@ impl InvoiceParser {
         ParserResult { invoices, errors }
     }
 
-    #[allow(dead_code)]
-    pub fn build_from_vec_with_converter(&self, amount_converter: &AmountConverter, parts: Vec<&str>) -> Result<Invoice, Error> {
-        self.build_from_vec_with_converter_option(Some(amount_converter), parts)
-    }
-
     pub fn build_from_vec(&self, parts: Vec<&str>) -> Result<Invoice, Error> {
-        self.build_from_vec_with_converter_option(None, parts)
-    }
-
-    fn build_from_vec_with_converter_option(&self, amount_converter: Option<&AmountConverter>, parts: Vec<&str>) -> Result<Invoice, Error> {
         let string_vec: Vec<String> =
             parts.iter()
                 .map(|x| { String::from(*x) })
@@ -61,21 +51,16 @@ impl InvoiceParser {
             &Currency::from_string(&currency),
         );
 
-        let base_amount = match amount_converter {
-//            Some(a) => Some(a.convert_to_base(&amount)),
-            Some(_) => None,
-            None => None
-        };
-
         let invoice_type = InvoiceType::from_str(&string_vec.get(3).unwrap_or(&"".to_string()));
-        let comment = self.get_vec_part(&string_vec, 4);
+        let note = self.get_vec_part(&string_vec, 4);
+        let base_amount = None;
 
         Ok(Invoice {
             date,
             amount,
             base_amount,
             invoice_type,
-            note: comment,
+            note,
         })
     }
 
