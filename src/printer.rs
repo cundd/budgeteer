@@ -43,27 +43,27 @@ impl PrinterTrait for Printer {
 
     #[allow(dead_code)]
     fn print_invoice(&self, base_currency: &Currency, invoice: &Invoice) -> () {
-        let comment = match invoice.comment {
+        let note = match invoice.note() {
             Some(ref c) => c.to_owned(),
             None => "".to_owned()
         };
 
-        println!("Datum:     {}", invoice.date.format("%A %d.%m.%Y"));
+        println!("Datum:     {}", invoice.date().format("%A %d.%m.%Y"));
 
-        if &invoice.amount.currency != base_currency {
-            match invoice.clone().base_amount {
+        if &invoice.amount().currency() != base_currency {
+            match invoice.clone().base_amount() {
                 Some(converted_amount) => println!(
                     "Betrag:    {} ({})",
-                    invoice.amount,
+                    invoice.amount(),
                     converted_amount
                 ),
-                None => println!("Betrag:    {}", invoice.amount)
+                None => println!("Betrag:    {}", invoice.amount())
             }
         } else {
-            println!("Betrag:    {}", invoice.amount);
+            println!("Betrag:    {}", invoice.amount());
         }
-        println!("Typ:       {}", invoice.invoice_type);
-        println!("Notiz:     {}", comment);
+        println!("Typ:       {}", invoice.invoice_type());
+        println!("Notiz:     {}", note);
         println!();
     }
 

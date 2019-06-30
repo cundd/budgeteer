@@ -9,16 +9,45 @@ pub mod amount;
 
 #[derive(Clone)]
 pub struct Invoice {
-    pub date: NaiveDate,
-    pub amount: Amount,
-    pub base_amount: Option<Amount>,
-    pub invoice_type: InvoiceType,
-    pub comment: Option<String>,
+    date: NaiveDate,
+    amount: Amount,
+    base_amount: Option<Amount>,
+    invoice_type: InvoiceType,
+    note: Option<String>,
+}
+
+impl Invoice {
+    pub fn date(&self) -> NaiveDate {
+        self.date
+    }
+    pub fn amount(&self) -> Amount {
+        self.amount.clone()
+    }
+    pub fn amount_ref(&self) -> &Amount {
+        &self.amount
+    }
+    pub fn base_amount(&self) -> Option<Amount> {
+        self.base_amount.clone()
+    }
+    pub fn invoice_type(&self) -> InvoiceType {
+        self.invoice_type
+    }
+    pub fn note(&self) -> Option<String> {
+        self.note.clone()
+    }
+
+    pub fn with_base_amount(&self, base_amount: Amount) -> Invoice {
+        let mut clone = self.clone();
+
+        clone.base_amount = Some(base_amount);
+
+        clone
+    }
 }
 
 impl fmt::Display for Invoice {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let comment = match self.comment {
+        let note = match self.note {
             Some(ref c) => c.to_owned(),
             None => "".to_owned()
         };
@@ -33,7 +62,7 @@ Notiz:     {}\
             self.date,
             self.amount,
             self.invoice_type,
-            comment
+            note
         )
     }
 }

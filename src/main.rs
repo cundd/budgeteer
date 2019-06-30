@@ -71,15 +71,6 @@ fn main() {
             .help("Level of verbosity"))
         .get_matches();
 
-    // Vary the output based on how many times the user used the "verbose" flag
-    // (i.e. 'myprog -v -v -v' or 'myprog -vvv' vs 'myprog -v'
-//    match matches.occurrences_of("v") {
-//        0 => println!("No verbose info"),
-//        1 => println!("Some verbose info"),
-//        2 => println!("Tons of verbose info"),
-//        3 | _ => println!("Don't be crazy"),
-//    }
-
     match execute(matches) {
         Err(e) => eprintln!("{}", e),
         Ok(_) => {}
@@ -113,7 +104,6 @@ fn execute(matches: ArgMatches) -> Result<(), Error> {
         &base_currency,
         &printer,
     )?;
-
 
     printer.print_invoices(&base_currency, &invoices);
 
@@ -149,8 +139,8 @@ fn get_filtered_invoices(
         return Ok(vec![]);
     }
     let rate_map = RateProvider::fetch_rates(
-        invoices.first().unwrap().date,
-        invoices.last().unwrap().date,
+        invoices.first().unwrap().date(),
+        invoices.last().unwrap().date(),
         collect_currencies(&invoices))?;
 
     let amount_converter = AmountConverter::new(base_currency.to_owned(), rate_map);
@@ -176,8 +166,8 @@ fn get_filtered_invoices(
 fn collect_currencies(invoices: &Vec<Invoice>) -> Vec<&str> {
     let mut currencies: HashSet<_> = HashSet::new();
     for invoice in invoices {
-        if invoice.amount.currency.iso != "EUR" {
-            currencies.insert(invoice.amount.currency.iso.as_str());
+        if invoice.amount().currency().iso != "EUR" {
+            currencies.insert(invoice.amount_ref().currency_ref().iso.as_str());
         }
     }
 

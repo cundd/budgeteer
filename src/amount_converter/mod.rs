@@ -19,33 +19,23 @@ impl AmountConverter {
     }
 
     pub fn invoice_with_base_amount(&self, invoice: &Invoice) -> Invoice {
-        let mut clone = invoice.clone();
-
-        clone.base_amount = Some(self.convert_to_base(invoice, &clone.amount));
-
-        clone
+        invoice.with_base_amount(self.convert_to_base(invoice, &invoice.amount()))
     }
 
     pub fn convert(&self, invoice: &Invoice, amount: &Amount, to: &Currency) -> Amount {
-        if &amount.currency == to {
-            return Amount {
-                currency: to.to_owned(),
-                value: amount.value,
-            };
+        if &amount.currency() == to {
+            return Amount::new(amount.value(), to);
         }
-        let rate = self.rate_map.get(&invoice.date.format("%Y-%m-%d").to_string())
-            .expect(&format!("Currency '{}' not found in map", amount.currency))
+        let rate = self.rate_map.get(&invoice.date().format("%Y-%m-%d").to_string())
+            .expect(&format!("Currency '{}' not found in map", amount.currency()))
             .rate;
-        let factor = if amount.currency == self.base_currency {
+        let factor = if amount.currency() == self.base_currency {
             rate
         } else {
             1.0 / rate
         };
 
-        Amount {
-            currency: to.to_owned(),
-            value: amount.value * factor,
-        }
+        return Amount::new(amount.value() * factor, to);
     }
     pub fn convert_to_base(&self, invoice: &Invoice, amount: &Amount) -> Amount {
         self.convert(invoice, amount, &self.base_currency)

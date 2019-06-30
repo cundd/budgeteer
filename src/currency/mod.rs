@@ -16,6 +16,18 @@ impl Currency {
         }
     }
 
+    pub fn eur() -> Self {
+        Currency::new("EUR", "€")
+    }
+
+    pub fn chf() -> Self {
+        Currency::new("CHF", "CHF")
+    }
+
+    pub fn usd() -> Self {
+        Currency::new("USD", "$")
+    }
+
     pub fn from_string(input: &str) -> Self {
         let all_currencies = currency_data::all();
         match all_currencies.get(input) {

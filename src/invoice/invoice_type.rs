@@ -1,6 +1,6 @@
 use std::fmt;
 
-#[derive(Clone, PartialOrd, PartialEq, Copy)]
+#[derive(Clone, PartialOrd, PartialEq, Copy, Debug)]
 pub enum InvoiceType {
     // "A" => Car / Auto
     Car,

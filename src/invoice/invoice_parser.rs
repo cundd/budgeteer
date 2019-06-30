@@ -56,10 +56,10 @@ impl InvoiceParser {
             "Could not read currency from line",
         )?;
 
-        let amount = Amount {
-            currency: Currency::from_string(&currency),
-            value: self.parse_amount(&string_vec)?,
-        };
+        let amount = Amount::new(
+            self.parse_amount(&string_vec)?,
+            &Currency::from_string(&currency),
+        );
 
         let base_amount = match amount_converter {
 //            Some(a) => Some(a.convert_to_base(&amount)),
@@ -75,7 +75,7 @@ impl InvoiceParser {
             amount,
             base_amount,
             invoice_type,
-            comment,
+            note: comment,
         })
     }
 
@@ -118,5 +118,26 @@ impl InvoiceParser {
             Some(s) => Ok(s.trim().to_owned()),
             None => Err(Error::ParseError(msg.to_owned())),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn build_from_vec() {
+        let invoice_parser = InvoiceParser::new();
+        let result = invoice_parser.build_from_vec(vec!["15.02.2019", "€", "66.60", "T", "Gas station"]);
+        match result {
+            Ok(i) => {
+                assert_eq!(i.invoice_type, InvoiceType::Gas);
+                assert_eq!(i.amount, Amount::new(66.6, &Currency::eur()));
+                assert_eq!(i.date, NaiveDate::from_ymd(2019, 02, 15));
+                assert!(i.note.is_some());
+                assert_eq!(i.note.unwrap(), "Gas station");
+            }
+            Err(e) => panic!(e)
+        };
     }
 }
