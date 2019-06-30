@@ -23,7 +23,6 @@ use amount_converter::AmountConverter;
 use invoice::Invoice;
 use error::Error;
 use filter::{Filter, Request};
-use calculator::Calculator;
 use file_reader::FileReader;
 use invoice::invoice_parser::InvoiceParser;
 use currency::Currency;
@@ -106,8 +105,7 @@ fn execute(matches: ArgMatches) -> Result<(), Error> {
     )?;
 
     printer.print_invoices(&base_currency, &invoices);
-
-    println!("TOTAL: {} {:.2}", base_currency, Calculator::sum(invoices));
+    printer.print_sum(&base_currency, &invoices);
 
     Ok(())
 }

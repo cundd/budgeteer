@@ -16,6 +16,8 @@ pub enum InvoiceType {
     Health,
     // "H" => Home / Haus
     Home,
+    // "I" => Internet / Handy / TV
+    Telecommunication,
 
     // Unknown
     Unknown,
@@ -31,6 +33,7 @@ impl InvoiceType {
             "T" | "GAS" | "TANKEN" => InvoiceType::Gas,
             "G" | "HEALTH" | "GESUNDHEIT" => InvoiceType::Health,
             "H" | "HOME" | "HAUS" => InvoiceType::Home,
+            "I" | "TELECOMMUNICATION" | "INTERNET" | "HANDY" | "TV" => InvoiceType::Telecommunication,
             _ => InvoiceType::Unknown
         }
     }
@@ -48,11 +51,12 @@ impl fmt::Display for InvoiceType {
             &InvoiceType::Car => "Car / Auto",
             &InvoiceType::Clothes => "Clothes / Kleidung",
             &InvoiceType::Eat => "Food / Essen",
-            &InvoiceType::Fun => "Fun / Hobby",
+            &InvoiceType::Fun => "Fun / Freunde / Hobby",
             &InvoiceType::Gas => "Gas / Tanken",
             &InvoiceType::Health => "Health / Gesundheit",
             &InvoiceType::Home => "Home / Hause",
-            &InvoiceType::Unknown => "",
+            &InvoiceType::Telecommunication => "Internet / Handy / TV",
+            &InvoiceType::Unknown => "Diverse",
         };
 
         write!(f, "{}", description)
