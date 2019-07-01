@@ -51,7 +51,7 @@ impl Printer {
         for invoice_type in types {
             let sum = Calculator::sum_for_type(invoices, invoice_type);
             println!(
-                "{:width$}: {} {:.2}",
+                "{:width$}: {} {: >8.2}",
                 format!("{}", invoice_type),
                 base_currency,
                 sum,
@@ -119,7 +119,7 @@ impl PrinterTrait for Printer {
 
     fn print_month_sum(&self, month: Month, base_currency: &Currency, invoices: &Vec<Invoice>) -> () {
         println!(
-            "{:width$}: {} {:.2}",
+            "{:width$}: {} {: >8.2}",
             format!("{}", month),
             base_currency,
             Calculator::sum(invoices),
