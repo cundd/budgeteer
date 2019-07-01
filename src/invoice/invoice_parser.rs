@@ -1,6 +1,6 @@
 use invoice::Invoice;
 use error::Error;
-use chrono::{NaiveDate, Datelike};
+use chrono::NaiveDate;
 use invoice::invoice_type::InvoiceType;
 use invoice::amount::Amount;
 use std;
@@ -25,11 +25,8 @@ impl InvoiceParser {
         let mut errors = vec![];
         for parts in lines {
             match self.build_from_vec(parts.iter().map(String::as_str).collect()) {
-                Ok(invoice) => {
-                    println!("{}", InvoiceParser::key(&invoice));
-                    invoices.push(invoice);
-                }
-                Err(error) => { errors.push(error); }
+                Ok(invoice) => { invoices.push(invoice) }
+                Err(error) => { errors.push(error) }
             }
         }
         invoices.sort_by(|a, b| {
@@ -79,12 +76,6 @@ impl InvoiceParser {
             invoice_type,
             note,
         })
-    }
-
-    fn key(invoice: &Invoice) -> i64 {
-        0
-            + (invoice.date.num_days_from_ce() * 1000) as i64
-            + (invoice.amount.value() * 100.0).round() as i64
     }
 
     fn parse_date(&self, string_vec: &Vec<String>) -> Result<NaiveDate, Error> {
