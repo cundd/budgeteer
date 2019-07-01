@@ -1,15 +1,16 @@
 use invoice::Invoice;
 use error::Error;
-use chrono::NaiveDate;
+use chrono::{NaiveDate, Datelike};
 use invoice::invoice_type::InvoiceType;
 use invoice::amount::Amount;
 use std;
 use std::collections::BTreeMap;
 use file_reader::LineParts;
 use currency::Currency;
+use std::cmp::Ordering;
 
 pub struct ParserResult {
-    pub invoices: BTreeMap<NaiveDate, Invoice>,
+    pub invoices: Vec<Invoice>,
     pub errors: Vec<Error>,
 }
 
@@ -21,16 +22,33 @@ impl InvoiceParser {
     }
 
     pub fn parse_lines(&self, lines: Vec<LineParts>) -> ParserResult {
-        let mut invoices = BTreeMap::new();
+        let mut invoices = vec![];
         let mut errors = vec![];
         for parts in lines {
             match self.build_from_vec(parts.iter().map(String::as_str).collect()) {
-                Ok(invoice) => { invoices.insert(invoice.date, invoice); }
+                Ok(invoice) => {
+                    println!("{}", InvoiceParser::key(&invoice));
+                    invoices.push(invoice);
+                }
                 Err(error) => { errors.push(error); }
             }
         }
+        invoices.sort_by(|a, b| {
+            if a.date > b.date {
+                Ordering::Greater
+            } else if a.date < b.date {
+                Ordering::Less
+            } else if a.amount.value() > b.amount.value() {
+                Ordering::Greater
+            } else {
+                Ordering::Less
+            }
+        });
 
-        ParserResult { invoices, errors }
+        ParserResult {
+            invoices,
+            errors,
+        }
     }
 
     pub fn build_from_vec(&self, parts: Vec<&str>) -> Result<Invoice, Error> {
@@ -62,6 +80,12 @@ impl InvoiceParser {
             invoice_type,
             note,
         })
+    }
+
+    fn key(invoice: &Invoice) -> i64 {
+        0
+            + (invoice.date.num_days_from_ce() * 1000) as i64
+            + (invoice.amount.value() * 100.0).round() as i64
     }
 
     fn parse_date(&self, string_vec: &Vec<String>) -> Result<NaiveDate, Error> {

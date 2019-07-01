@@ -163,7 +163,7 @@ fn get_invoices(
 ) -> Result<Vec<Invoice>, Error> {
     let lines = FileReader::read(input_file)?;
     let result = parser.parse_lines(lines.lines);
-    let invoices: Vec<Invoice> = result.invoices.into_iter().map(|(_, i)| i).collect();
+    let invoices: Vec<Invoice> = result.invoices;
 
     if let Some(printer) = printer {
         printer.print_errors(result.errors);
@@ -175,7 +175,8 @@ fn get_invoices(
     let rate_map = RateProvider::fetch_rates(
         invoices.first().unwrap().date(),
         invoices.last().unwrap().date(),
-        collect_currencies(&invoices))?;
+        collect_currencies(&invoices),
+    )?;
 
     let amount_converter = AmountConverter::new(base_currency.to_owned(), rate_map);
     if invoices.len() == 0 {
