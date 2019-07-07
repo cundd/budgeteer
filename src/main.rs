@@ -31,6 +31,7 @@ use std::collections::HashSet;
 use verbosity::Verbosity;
 use printer::{Printer, PrinterTrait};
 use chrono::{Datelike, Local};
+use invoice::invoice_type::InvoiceType;
 
 fn main() {
     let matches = App::new("Budgeteer")
@@ -70,6 +71,10 @@ fn main() {
             .short("v")
             .multiple(true)
             .help("Level of verbosity"))
+        .arg(Arg::with_name("show-types")
+            .long("show-types")
+            .takes_value(false)
+            .help("Display the available types"))
         .get_matches();
 
     match execute(matches) {
@@ -78,14 +83,18 @@ fn main() {
     }
 }
 
-fn execute(matches: ArgMatches) -> Result<(), Error> {
+fn execute(matches: ArgMatches) -> Res<()> {
+    if matches.is_present("show-types") {
+        return show_types(&matches);
+    }
+
+
     let input_file = matches.value_of("input").unwrap();
 //    let rate_string = matches.value_of("rate").unwrap();
 //    let rate = get_rate(rate_string)?;
     let filter_request = build_filter_request(&matches)?;
 
     let printer = Printer::new();
-
     let base_currency = Currency::eur();
     let parser = InvoiceParser::new();
 
@@ -195,4 +204,23 @@ fn collect_currencies(invoices: &Vec<Invoice>) -> Vec<&str> {
     }
 
     currencies.into_iter().collect()
+}
+
+fn show_types(_matches: &ArgMatches) -> Res<()> {
+    let types = vec![
+        InvoiceType::Car,
+        InvoiceType::Clothes,
+        InvoiceType::Eat,
+        InvoiceType::Gas,
+        InvoiceType::Fun,
+        InvoiceType::Health,
+        InvoiceType::Home,
+        InvoiceType::Telecommunication,
+    ];
+
+    println!("Available types:");
+    for invoice_type in types {
+        println!("- {}: {}", invoice_type.identifier(), invoice_type);
+    }
+    Ok(())
 }

@@ -37,6 +37,20 @@ impl InvoiceType {
             _ => InvoiceType::Unknown
         }
     }
+
+    pub fn identifier(&self) -> char {
+        match self {
+            InvoiceType::Car => 'A',
+            InvoiceType::Clothes => 'C',
+            InvoiceType::Eat => 'E',
+            InvoiceType::Fun => 'F',
+            InvoiceType::Gas => 'T',
+            InvoiceType::Health => 'G',
+            InvoiceType::Home => 'H',
+            InvoiceType::Telecommunication => 'I',
+            InvoiceType::Unknown => ' ',
+        }
+    }
 }
 
 

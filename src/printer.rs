@@ -113,7 +113,7 @@ impl PrinterTrait for Printer {
 
     fn print_sum(&self, base_currency: &Currency, invoices: &Vec<Invoice>) -> () {
         self.print_type_sum(base_currency, invoices);
-        println!("--------------------------------");
+        println!("----------------------------------");
         self.print_grand_total(base_currency, invoices);
     }
 
