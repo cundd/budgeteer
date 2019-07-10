@@ -1,4 +1,6 @@
 use std::fmt;
+use std::str::FromStr;
+use error::Error;
 
 #[derive(Clone, PartialOrd, PartialEq, Copy, Debug)]
 pub enum InvoiceType {
@@ -74,5 +76,13 @@ impl fmt::Display for InvoiceType {
         };
 
         write!(f, "{}", description)
+    }
+}
+
+impl FromStr for InvoiceType {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(InvoiceType::from_str(s))
     }
 }

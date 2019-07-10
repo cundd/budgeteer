@@ -54,15 +54,15 @@ impl InvoiceParser {
                 .collect();
 
         let date = self.parse_date(&string_vec)?;
-        let currency = self.get_vec_part_or_error(
+        let raw_currency = self.get_vec_part_or_error(
             &string_vec,
             1,
             "Could not read currency from line",
         )?;
-
+        let currency = Currency::from_string(&raw_currency)?;
         let amount = Amount::new(
             self.parse_amount(&string_vec)?,
-            &Currency::from_string(&currency),
+            &currency,
         );
 
         let invoice_type = InvoiceType::from_str(&string_vec.get(3).unwrap_or(&"".to_string()));

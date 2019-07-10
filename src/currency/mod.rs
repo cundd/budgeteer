@@ -1,6 +1,8 @@
 mod currency_data;
 
 use std::fmt;
+use error::Res;
+use error::Error;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Currency {
@@ -28,14 +30,14 @@ impl Currency {
         Currency::new("USD", "$")
     }
 
-    pub fn from_string(input: &str) -> Self {
+    pub fn from_string(input: &str) -> Res<Self> {
         let all_currencies = currency_data::all();
         match all_currencies.get(input) {
-            Some(c) => c.clone(),
+            Some(c) => Ok(c.clone()),
             None => {
                 match all_currencies.iter().find(|(_, c)| &c.symbol == input) {
-                    Some((_, c)) => c.to_owned(),
-                    None => panic!("Currency '{}' not found", input),
+                    Some((_, c)) => Ok(c.to_owned()),
+                    None => Err(Error::ParseError(format!("Currency '{}' not found", input))),
                 }
             }
         }

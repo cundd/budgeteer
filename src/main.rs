@@ -5,6 +5,8 @@ extern crate clap;
 extern crate chrono;
 extern crate serde_json;
 extern crate core;
+extern crate dialoguer;
+extern crate serde;
 
 mod error;
 mod file_reader;
@@ -17,8 +19,9 @@ mod currency;
 mod calculator;
 mod verbosity;
 mod month;
+mod wizard;
 
-use clap::{Arg, App, ArgMatches};
+use clap::{Arg, App, ArgMatches, SubCommand};
 use rate_provider::RateProvider;
 use amount_converter::AmountConverter;
 use invoice::Invoice;
@@ -32,6 +35,7 @@ use verbosity::Verbosity;
 use printer::{Printer, PrinterTrait};
 use chrono::{Datelike, Local};
 use invoice::invoice_type::InvoiceType;
+use wizard::Wizard;
 
 fn main() {
     let matches = App::new("Budgeteer")
@@ -75,6 +79,12 @@ fn main() {
             .long("show-types")
             .takes_value(false)
             .help("Display the available types"))
+        .subcommand(SubCommand::with_name("wizard")
+            .about("Interactive wizard to create new rows")
+            .version("0.1.0")
+            .arg(Arg::with_name("debug")
+                .short("d")
+                .help("print debug information verbosely")))
         .get_matches();
 
     match execute(matches) {
@@ -88,14 +98,25 @@ fn execute(matches: ArgMatches) -> Res<()> {
         return show_types(&matches);
     }
 
-
     let input_file = matches.value_of("input").unwrap();
+    let printer = Printer::new();
+    let base_currency = Currency::eur();
+
+    if let Some(_matches) = matches.subcommand_matches("wizard") {
+        let wiz = Wizard {};
+        let invoice = wiz.run()?;
+
+        println!();
+        println!("Read the following invoice:");
+        printer.print_invoice(&base_currency, &invoice);
+
+        return Ok(());
+    }
+
 //    let rate_string = matches.value_of("rate").unwrap();
 //    let rate = get_rate(rate_string)?;
     let filter_request = build_filter_request(&matches)?;
 
-    let printer = Printer::new();
-    let base_currency = Currency::eur();
     let parser = InvoiceParser::new();
 
     let verbosity = Verbosity::from_int(matches.occurrences_of("v"));

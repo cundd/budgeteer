@@ -17,6 +17,15 @@ pub struct Invoice {
 }
 
 impl Invoice {
+    pub fn new(date: NaiveDate, amount: Amount, base_amount: Option<Amount>, invoice_type: InvoiceType, note: Option<String>) -> Self {
+        Invoice {
+            date,
+            amount,
+            base_amount,
+            invoice_type,
+            note,
+        }
+    }
     pub fn date(&self) -> NaiveDate {
         self.date
     }
