@@ -40,6 +40,7 @@ impl Wizard {
     fn read_currency(&self) -> Res<Currency> {
         let raw_currency = Input::<String>::new()
             .with_prompt("Currency")
+            .default("€".to_owned())
             .interact()?
             .to_uppercase();
 

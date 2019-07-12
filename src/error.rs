@@ -11,7 +11,7 @@ pub type Res<T, E = Error> = ::std::result::Result<T, E>;
 // implementation, or do something in between.
 #[derive(Debug, Clone, PartialEq)]
 pub enum Error {
-    FileIO,
+    FileIO(String),
     ParseError(String),
     RateError(String),
     #[allow(dead_code)]
@@ -25,7 +25,7 @@ pub enum Error {
 impl Error {
     fn description(&self) -> &str {
         match self {
-            &Error::FileIO => {
+            &Error::FileIO(_) => {
                 "File IO error"
             }
             &Error::ParseError(_) => {
@@ -59,7 +59,7 @@ impl Error {
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            &Error::FileIO => write!(f, "{}", self.description()),
+            &Error::FileIO(ref s) => write!(f, "{}: {}", self.description(), s),
             &Error::LineComment => write!(f, "{}", self.description()),
             &Error::LineEmpty => write!(f, "{}", self.description()),
             &Error::LineSeparator => write!(f, "{}", self.description()),
@@ -88,8 +88,8 @@ impl error::Error for Error {
 //}
 
 impl From<io::Error> for Error {
-    fn from(_: io::Error) -> Self {
-        Error::FileIO {}
+    fn from(error: io::Error) -> Self {
+        Error::FileIO(format!("{}", error::Error::description(&error)))
     }
 }
 
@@ -124,7 +124,7 @@ impl From<serde_json::Error> for Error {
 }
 
 impl<'a> From<&'a io::Error> for Error {
-    fn from(_: &io::Error) -> Self {
-        Error::FileIO {}
+    fn from(error: &io::Error) -> Self {
+        Error::FileIO(format!("{}", error))
     }
 }

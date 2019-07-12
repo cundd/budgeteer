@@ -9,6 +9,7 @@ extern crate dialoguer;
 extern crate serde;
 
 mod error;
+mod file_writer;
 mod file_reader;
 mod invoice;
 mod amount_converter;
@@ -36,6 +37,7 @@ use printer::{Printer, PrinterTrait};
 use chrono::{Datelike, Local};
 use invoice::invoice_type::InvoiceType;
 use wizard::Wizard;
+use file_writer::FileWriter;
 
 fn main() {
     let matches = App::new("Budgeteer")
@@ -82,6 +84,10 @@ fn main() {
         .subcommand(SubCommand::with_name("wizard")
             .about("Interactive wizard to create new rows")
             .version("0.1.0")
+            .arg(Arg::with_name("output")
+                .help("Budget file to write")
+                .required(true)
+                .index(1))
             .arg(Arg::with_name("debug")
                 .short("d")
                 .help("print debug information verbosely")))
@@ -102,7 +108,10 @@ fn execute(matches: ArgMatches) -> Res<()> {
     let printer = Printer::new();
     let base_currency = Currency::eur();
 
-    if let Some(_matches) = matches.subcommand_matches("wizard") {
+    if let Some(subcommand_matches) = matches.subcommand_matches("wizard") {
+        let output_file = subcommand_matches.value_of("output").unwrap();
+        FileWriter::check_output_path(output_file)?;
+
         let wiz = Wizard {};
         let invoice = wiz.run()?;
 
@@ -110,7 +119,7 @@ fn execute(matches: ArgMatches) -> Res<()> {
         println!("Read the following invoice:");
         printer.print_invoice(&base_currency, &invoice);
 
-        return Ok(());
+        return FileWriter::write_invoice(output_file, &invoice);
     }
 
 //    let rate_string = matches.value_of("rate").unwrap();
@@ -125,15 +134,12 @@ fn execute(matches: ArgMatches) -> Res<()> {
     }
 
     let all_invoices = get_invoices(input_file, &parser, &base_currency, Some(&printer))?;
-
-
     let invoices_to_print = if filter_request.empty() {
         all_invoices
     } else {
         Filter::filter(&all_invoices, &filter_request)
     };
     printer.print_invoices(&base_currency, &invoices_to_print);
-
 
     if filter_request.month().is_none() {
         for month in 1..13 {
