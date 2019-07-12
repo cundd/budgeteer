@@ -1,6 +1,6 @@
 use invoice::Invoice;
 use error::{Res, Error};
-use std::fs::{File, OpenOptions};
+use std::fs::OpenOptions;
 use std::io::prelude::*;
 use std::path::Path;
 
@@ -10,7 +10,7 @@ impl FileWriter {
     pub fn write_invoice(path: &str, invoice: &Invoice) -> Res<()> {
         let mut file = OpenOptions::new().create(true).append(true).open(path)?;
 
-        let mut line = format!(
+        let line = format!(
             "| {} | {} | {} | {} | {} | ",
             invoice.date().format("%d.%m.%Y"),
             invoice.amount().currency(),
