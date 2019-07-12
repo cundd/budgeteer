@@ -43,44 +43,44 @@ fn main() {
     let matches = App::new("Budgeteer")
         .version("0.1.0")
         .author("Daniel Corn <info@corn.rest>")
-        .about("Show information about paid invoices")
-        .arg(Arg::with_name("input")
-            .help("Budget file to use")
-            .required(true)
-            .index(1))
+        .about("Manage information about paid invoices")
+
+        .subcommand(SubCommand::with_name("analyze")
+            .about("Show information about paid invoices")
+            .version("0.1.0")
+            .arg(Arg::with_name("input")
+                .help("Budget file to use")
+                .required(true)
+                .index(1))
 //        .arg(Arg::with_name("rate")
 //            .long("rate")
 //            .short("r")
 //            .takes_value(true)
 //            .help("Currency change rate (CHF per €)"))
-        .arg(Arg::with_name("year")
-            .long("year")
-            .short("y")
-            .takes_value(true)
-            .help("Filter by year"))
-        .arg(Arg::with_name("type")
-            .long("type")
-            .short("t")
-            .takes_value(true)
-            .help("Filter by type"))
-        .arg(Arg::with_name("month")
-            .long("month")
-            .short("m")
-            .takes_value(true)
-            .help("Filter by month"))
-        .arg(Arg::with_name("day")
-            .long("day")
-            .short("d")
-            .takes_value(true)
-            .help("Filter by day"))
-        .arg(Arg::with_name("v")
-            .short("v")
-            .multiple(true)
-            .help("Level of verbosity"))
-        .arg(Arg::with_name("show-types")
-            .long("show-types")
-            .takes_value(false)
-            .help("Display the available types"))
+            .arg(Arg::with_name("year")
+                .long("year")
+                .short("y")
+                .takes_value(true)
+                .help("Filter by year"))
+            .arg(Arg::with_name("type")
+                .long("type")
+                .short("t")
+                .takes_value(true)
+                .help("Filter by type"))
+            .arg(Arg::with_name("month")
+                .long("month")
+                .short("m")
+                .takes_value(true)
+                .help("Filter by month"))
+            .arg(Arg::with_name("day")
+                .long("day")
+                .short("d")
+                .takes_value(true)
+                .help("Filter by day"))
+            .arg(Arg::with_name("v")
+                .short("v")
+                .multiple(true)
+                .help("Level of verbosity")))
         .subcommand(SubCommand::with_name("wizard")
             .about("Interactive wizard to create new rows")
             .version("0.1.0")
@@ -91,6 +91,9 @@ fn main() {
             .arg(Arg::with_name("debug")
                 .short("d")
                 .help("print debug information verbosely")))
+        .subcommand(SubCommand::with_name("show-types")
+            .about("Display the available types")
+            .version("0.1.0"))
         .get_matches();
 
     match execute(matches) {
@@ -99,17 +102,16 @@ fn main() {
     }
 }
 
-fn execute(matches: ArgMatches) -> Res<()> {
-    if matches.is_present("show-types") {
-        return show_types(&matches);
+fn execute(root_matches: ArgMatches) -> Res<()> {
+    if let Some(_) = root_matches.subcommand_matches("show-types") {
+        return show_types();
     }
 
-    let input_file = matches.value_of("input").unwrap();
     let printer = Printer::new();
     let base_currency = Currency::eur();
 
-    if let Some(subcommand_matches) = matches.subcommand_matches("wizard") {
-        let output_file = subcommand_matches.value_of("output").unwrap();
+    if let Some(matches) = root_matches.subcommand_matches("wizard") {
+        let output_file = matches.value_of("output").unwrap();
         FileWriter::check_output_path(output_file)?;
 
         let wiz = Wizard {};
@@ -121,33 +123,38 @@ fn execute(matches: ArgMatches) -> Res<()> {
 
         return FileWriter::write_invoice(output_file, &invoice);
     }
+    if let Some(matches) = root_matches.subcommand_matches("analyze") {
+        let input_file = matches.value_of("input").unwrap();
 
-//    let rate_string = matches.value_of("rate").unwrap();
-//    let rate = get_rate(rate_string)?;
-    let filter_request = build_filter_request(&matches)?;
+        //    let rate_string = matches.value_of("rate").unwrap();
+        //    let rate = get_rate(rate_string)?;
+        let filter_request = build_filter_request(&matches)?;
 
-    let parser = InvoiceParser::new();
+        let parser = InvoiceParser::new();
 
-    let verbosity = Verbosity::from_int(matches.occurrences_of("v"));
-    if verbosity >= Verbosity::Info {
-        printer.print_filter_request(&filter_request);
-    }
-
-    let all_invoices = get_invoices(input_file, &parser, &base_currency, Some(&printer))?;
-    let invoices_to_print = if filter_request.empty() {
-        all_invoices
-    } else {
-        Filter::filter(&all_invoices, &filter_request)
-    };
-    printer.print_invoices(&base_currency, &invoices_to_print);
-
-    if filter_request.month().is_none() {
-        for month in 1..13 {
-            filter_and_print_month_sum(&matches, &printer, &base_currency, &invoices_to_print, month);
+        let verbosity = Verbosity::from_int(matches.occurrences_of("v"));
+        if verbosity >= Verbosity::Info {
+            printer.print_filter_request(&filter_request);
         }
-        println!()
+
+        let all_invoices = get_invoices(input_file, &parser, &base_currency, Some(&printer))?;
+        let invoices_to_print = if filter_request.empty() {
+            all_invoices
+        } else {
+            Filter::filter(&all_invoices, &filter_request)
+        };
+        printer.print_invoices(&base_currency, &invoices_to_print);
+
+        if filter_request.month().is_none() {
+            for month in 1..13 {
+                filter_and_print_month_sum(&matches, &printer, &base_currency, &invoices_to_print, month);
+            }
+            println!()
+        }
+        printer.print_sum(&base_currency, &invoices_to_print);
+
+        return Ok(());
     }
-    printer.print_sum(&base_currency, &invoices_to_print);
 
     Ok(())
 }
@@ -233,7 +240,7 @@ fn collect_currencies(invoices: &Vec<Invoice>) -> Vec<&str> {
     currencies.into_iter().collect()
 }
 
-fn show_types(_matches: &ArgMatches) -> Res<()> {
+fn show_types() -> Res<()> {
     let types = vec![
         InvoiceType::Car,
         InvoiceType::Clothes,
