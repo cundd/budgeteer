@@ -119,13 +119,8 @@ fn execute(root_matches: ArgMatches) -> Res<()> {
         FileWriter::check_output_path(&output_file)?;
 
         let wiz = Wizard {};
-        let invoice = wiz.run()?;
 
-        println!();
-        println!("Read the following invoice:");
-        printer.print_invoice(&base_currency, &invoice);
-
-        return FileWriter::write_invoice(&output_file, &invoice);
+        return wiz.run(&printer, &base_currency, &output_file);
     }
     if let Some(matches) = root_matches.subcommand_matches("analyze") {
         let input_file = normalize_path(matches.value_of("input").unwrap())?;
