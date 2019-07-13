@@ -2,7 +2,7 @@ use invoice::Invoice;
 use error::{Res, Error};
 use std::fs::OpenOptions;
 use std::io::prelude::*;
-use std::path::Path;
+use std::fs;
 
 pub struct FileWriter {}
 
@@ -11,7 +11,7 @@ impl FileWriter {
         let mut file = OpenOptions::new().create(true).append(true).open(path)?;
 
         let line = format!(
-            "| {} | {} | {} | {} | {} | ",
+            "| {} | {} | {} | {} | {} | \n",
             invoice.date().format("%d.%m.%Y"),
             invoice.amount().currency(),
             invoice.amount().value(),
@@ -23,7 +23,7 @@ impl FileWriter {
     }
 
     pub fn check_output_path(path_str: &str) -> Res<()> {
-        let path = Path::new(path_str);
+        let path = fs::canonicalize(path_str)?;
         if path.is_dir() {
             return Err(Error::FileIO("Output path must not be a directory".to_owned()));
         }

@@ -2,6 +2,7 @@ use std::fs::File;
 use std::io;
 use std::io::{BufReader, BufRead};
 use error::Error;
+use std::path::Path;
 
 pub type LineParts = Vec<String>;
 
@@ -14,6 +15,9 @@ pub struct FileReader {}
 
 impl FileReader {
     pub fn read(input_file: &str) -> Result<ReadFileResult, Error> {
+        if !Path::new(input_file).exists() {
+            return Err(Error::FileIO(format!("File {} does not exist", input_file)));
+        }
         let f = File::open(input_file)?;
         let file = BufReader::new(&f);
         let mut lines = vec![];

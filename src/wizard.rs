@@ -1,10 +1,11 @@
-use dialoguer::Input;
+use dialoguer::{Input, Select};
 use error::Res;
 use chrono::{NaiveDate, Local};
 use currency::Currency;
 use invoice::invoice_type::InvoiceType;
 use invoice::Invoice;
 use invoice::amount::Amount;
+use dialoguer::theme::ColorfulTheme;
 
 pub struct Wizard {}
 
@@ -50,14 +51,37 @@ impl Wizard {
         }
     }
     fn read_amount(&self) -> Res<f64> {
-        Ok(Input::<f64>::new()
+        let raw_amount = Input::<String>::new()
             .with_prompt("Amount")
-            .interact()?)
+            .interact()?;
+
+        let raw_amount_normalized = if raw_amount.contains(',') {
+            raw_amount.replace(',', ".")
+        } else {
+            raw_amount
+        };
+
+        match raw_amount_normalized.parse::<f64>() {
+            Ok(c) => Ok(c),
+            Err(_) => {
+                println!("Please enter a valid amount");
+                self.read_amount()
+            }
+        }
     }
     fn read_invoice_type(&self) -> Res<InvoiceType> {
-        Ok(Input::<InvoiceType>::new()
+        let all = InvoiceType::all();
+        let i = Select::with_theme(&ColorfulTheme::default())
             .with_prompt("Type")
-            .interact()?)
+            .default(0)
+            .items(&all[..])
+            .interact()?;
+
+        Ok(all[i])
+
+//        Ok(Input::<InvoiceType>::new()
+//            .with_prompt("Type")
+//            .interact()?)
     }
     fn read_note(&self) -> Res<String> {
         Ok(Input::<String>::new()

@@ -53,6 +53,19 @@ impl InvoiceType {
             InvoiceType::Unknown => ' ',
         }
     }
+
+    pub fn all() -> [InvoiceType; 8] {
+        [
+            InvoiceType::Car,
+            InvoiceType::Clothes,
+            InvoiceType::Eat,
+            InvoiceType::Gas,
+            InvoiceType::Fun,
+            InvoiceType::Health,
+            InvoiceType::Home,
+            InvoiceType::Telecommunication,
+        ]
+    }
 }
 
 
