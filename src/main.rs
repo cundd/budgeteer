@@ -46,6 +46,7 @@ fn main() {
         .about("Manage information about paid invoices")
 
         .subcommand(SubCommand::with_name("analyze")
+            .alias("a")
             .about("Show information about paid invoices")
             .version("0.1.0")
             .arg(Arg::with_name("input")
@@ -82,6 +83,7 @@ fn main() {
                 .multiple(true)
                 .help("Level of verbosity")))
         .subcommand(SubCommand::with_name("wizard")
+            .alias("w")
             .about("Interactive wizard to create new rows")
             .version("0.1.0")
             .arg(Arg::with_name("output")
@@ -241,19 +243,8 @@ fn collect_currencies(invoices: &Vec<Invoice>) -> Vec<&str> {
 }
 
 fn show_types() -> Res<()> {
-    let types = vec![
-        InvoiceType::Car,
-        InvoiceType::Clothes,
-        InvoiceType::Eat,
-        InvoiceType::Gas,
-        InvoiceType::Fun,
-        InvoiceType::Health,
-        InvoiceType::Home,
-        InvoiceType::Telecommunication,
-    ];
-
     println!("Available types:");
-    for invoice_type in types {
+    for invoice_type in &InvoiceType::all() {
         println!("- {}: {}", invoice_type.identifier(), invoice_type);
     }
     Ok(())
