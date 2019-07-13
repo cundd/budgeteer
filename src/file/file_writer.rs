@@ -3,11 +3,12 @@ use error::{Res, Error};
 use std::fs::OpenOptions;
 use std::io::prelude::*;
 use std::fs;
+use std::path::Path;
 
 pub struct FileWriter {}
 
 impl FileWriter {
-    pub fn write_invoice(path: &str, invoice: &Invoice) -> Res<()> {
+    pub fn write_invoice<P: AsRef<Path>>(path: P, invoice: &Invoice) -> Res<()> {
         let mut file = OpenOptions::new().create(true).append(true).open(path)?;
 
         let line = format!(
@@ -22,7 +23,7 @@ impl FileWriter {
         Ok(file.write_all(line.as_bytes())?)
     }
 
-    pub fn check_output_path(path_str: &str) -> Res<()> {
+    pub fn check_output_path<P: AsRef<Path>>(path_str: P) -> Res<()> {
         let path = fs::canonicalize(path_str)?;
         if path.is_dir() {
             return Err(Error::FileIO("Output path must not be a directory".to_owned()));

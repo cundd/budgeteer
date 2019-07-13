@@ -9,8 +9,9 @@ extern crate dialoguer;
 extern crate serde;
 
 mod error;
-mod file_writer;
-mod file_reader;
+mod file;
+//mod file_writer;
+//mod file_reader;
 mod invoice;
 mod amount_converter;
 mod rate_provider;
@@ -28,7 +29,7 @@ use amount_converter::AmountConverter;
 use invoice::Invoice;
 use error::{Error, Res};
 use filter::{Filter, Request};
-use file_reader::FileReader;
+use file::{FileReader, normalize_path};
 use invoice::invoice_parser::InvoiceParser;
 use currency::Currency;
 use std::collections::HashSet;
@@ -37,7 +38,8 @@ use printer::{Printer, PrinterTrait};
 use chrono::{Datelike, Local};
 use invoice::invoice_type::InvoiceType;
 use wizard::Wizard;
-use file_writer::FileWriter;
+use file::FileWriter;
+use std::path::Path;
 
 fn main() {
     let matches = App::new("Budgeteer")
@@ -113,8 +115,8 @@ fn execute(root_matches: ArgMatches) -> Res<()> {
     let base_currency = Currency::eur();
 
     if let Some(matches) = root_matches.subcommand_matches("wizard") {
-        let output_file = matches.value_of("output").unwrap();
-        FileWriter::check_output_path(output_file)?;
+        let output_file = normalize_path(matches.value_of("output").unwrap())?;
+        FileWriter::check_output_path(&output_file)?;
 
         let wiz = Wizard {};
         let invoice = wiz.run()?;
@@ -123,10 +125,10 @@ fn execute(root_matches: ArgMatches) -> Res<()> {
         println!("Read the following invoice:");
         printer.print_invoice(&base_currency, &invoice);
 
-        return FileWriter::write_invoice(output_file, &invoice);
+        return FileWriter::write_invoice(&output_file, &invoice);
     }
     if let Some(matches) = root_matches.subcommand_matches("analyze") {
-        let input_file = matches.value_of("input").unwrap();
+        let input_file = normalize_path(matches.value_of("input").unwrap())?;
 
         //    let rate_string = matches.value_of("rate").unwrap();
         //    let rate = get_rate(rate_string)?;
@@ -200,8 +202,8 @@ fn build_month_filter_request(matches: &ArgMatches, month: u32) -> Res<Request> 
 //    }
 //}
 
-fn get_invoices(
-    input_file: &str,
+fn get_invoices<P: AsRef<Path>>(
+    input_file: P,
     parser: &InvoiceParser,
     base_currency: &Currency,
     printer: Option<&Printer>,

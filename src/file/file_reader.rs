@@ -14,9 +14,9 @@ pub struct ReadFileResult {
 pub struct FileReader {}
 
 impl FileReader {
-    pub fn read(input_file: &str) -> Result<ReadFileResult, Error> {
-        if !Path::new(input_file).exists() {
-            return Err(Error::FileIO(format!("File {} does not exist", input_file)));
+    pub fn read<P: AsRef<Path>>(input_file: P) -> Result<ReadFileResult, Error> {
+        if !input_file.as_ref().exists() {
+            return Err(Error::FileIO(format!("File {} does not exist", input_file.as_ref().to_string_lossy())));
         }
         let f = File::open(input_file)?;
         let file = BufReader::new(&f);

@@ -4,7 +4,7 @@ use chrono::NaiveDate;
 use invoice::invoice_type::InvoiceType;
 use invoice::amount::Amount;
 use std;
-use file_reader::LineParts;
+use file::LineParts;
 use currency::Currency;
 use std::cmp::Ordering;
 
