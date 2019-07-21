@@ -5,14 +5,29 @@ use currency::Currency;
 use invoice::invoice_type::InvoiceType;
 use invoice::Invoice;
 use invoice::amount::Amount;
-use dialoguer::theme::ColorfulTheme;
+use dialoguer::theme::{ColorfulTheme, Theme};
 use printer::{Printer, PrinterTrait};
 use file::FileWriter;
 use std::path::Path;
+use console::{Term, Style};
 
-pub struct Wizard {}
+pub struct Wizard {
+    theme: Box<Theme>,
+    #[allow(dead_code)]
+    term: Term,
+}
 
 impl Wizard {
+    pub fn new() -> Wizard {
+        let mut theme = ColorfulTheme::default();
+        theme.defaults_style = Style::new().blink();
+
+        Wizard {
+            theme: Box::new(theme),
+            term: Term::stdout(),
+        }
+    }
+
     pub fn run<P: AsRef<Path>>(&self, printer: &Printer, base_currency: &Currency, output_file: P) -> Res<()> {
         println!("Welcome to the invoice wizard");
 
@@ -21,6 +36,7 @@ impl Wizard {
 
         self.run_inner(printer, base_currency, output_file)
     }
+
     fn run_inner<P: AsRef<Path>>(&self, printer: &Printer, base_currency: &Currency, output_file: P) -> Res<()> {
         let invoice = self.create_invoice()?;
 
@@ -28,7 +44,7 @@ impl Wizard {
         println!("Read the following invoice:");
         printer.print_invoice(&base_currency, &invoice);
 
-        if Confirmation::new().with_text("Save this invoice?").interact()? {
+        if Confirmation::with_theme(self.theme.as_ref()).with_text("Save this invoice?").interact()? {
             FileWriter::write_invoice(&output_file, &invoice)?;
             println!("Saved the new invoice");
 
@@ -61,7 +77,8 @@ impl Wizard {
     }
 
     fn read_date(&self) -> Res<NaiveDate> {
-        let raw_date = Input::<String>::new()
+        // self.prompt("Date (dd.mm.yyyy)");
+        let raw_date = Input::<String>::with_theme(self.theme.as_ref())
             .with_prompt("Date (dd.mm.yyyy)")
             .default(Local::now().format("%d.%m.%Y").to_string())
             .interact()?;
@@ -73,7 +90,8 @@ impl Wizard {
     }
 
     fn read_currency(&self) -> Res<Currency> {
-        let raw_currency = Input::<String>::new()
+        // self.prompt("Currency");
+        let raw_currency = Input::<String>::with_theme(self.theme.as_ref())
             .with_prompt("Currency")
             .default("€".to_owned())
             .interact()?
@@ -87,8 +105,10 @@ impl Wizard {
             }
         }
     }
+
     fn read_amount(&self) -> Res<f64> {
-        let raw_amount = Input::<String>::new()
+        // self.prompt("Amount");
+        let raw_amount = Input::<String>::with_theme(self.theme.as_ref())
             .with_prompt("Amount")
             .interact()?;
 
@@ -106,8 +126,10 @@ impl Wizard {
             }
         }
     }
+
     fn read_invoice_type(&self) -> Res<InvoiceType> {
         let all = InvoiceType::all();
+        // self.prompt("Type");
         let i = Select::with_theme(&ColorfulTheme::default())
             .with_prompt("Type")
             .default(0)
@@ -116,14 +138,24 @@ impl Wizard {
 
         Ok(all[i])
 
-//        Ok(Input::<InvoiceType>::new()
+//        // self.prompt("Type");
+//        Ok(Input::<InvoiceType>::with_theme(self.theme.as_ref())
 //            .with_prompt("Type")
 //            .interact()?)
     }
+
     fn read_note(&self) -> Res<String> {
-        Ok(Input::<String>::new()
+        // self.prompt("Note");
+        Ok(Input::<String>::with_theme(self.theme.as_ref())
             .with_prompt("Note")
             .allow_empty(true)
             .interact()?)
+    }
+
+    #[allow(dead_code)]
+    fn prompt<'a, S>(&self, prompt: S) -> Res<()> where S: Into<&'a str> {
+        let style = Style::new().yellow();
+
+        Ok(self.term.write_str(&format!("{}", style.apply_to(prompt.into())))?)
     }
 }

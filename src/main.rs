@@ -7,6 +7,7 @@ extern crate serde_json;
 extern crate core;
 extern crate dialoguer;
 extern crate serde;
+extern crate console;
 
 mod error;
 mod file;
@@ -29,7 +30,7 @@ use amount_converter::AmountConverter;
 use invoice::Invoice;
 use error::{Error, Res};
 use filter::{Filter, Request};
-use file::{FileReader, normalize_path};
+use file::{FileReader, normalize_file_path};
 use invoice::invoice_parser::InvoiceParser;
 use currency::Currency;
 use std::collections::HashSet;
@@ -115,35 +116,40 @@ fn execute(root_matches: ArgMatches) -> Res<()> {
     let base_currency = Currency::eur();
 
     if let Some(matches) = root_matches.subcommand_matches("wizard") {
-        let output_file = normalize_path(matches.value_of("output").unwrap())?;
+        let output_file = normalize_file_path(matches.value_of("output").unwrap())?;
         FileWriter::check_output_path(&output_file)?;
+        if output_file.exists() {
+            println!("The output file contains these invoices:");
+            let _ = load_and_display_invoices(
+                &printer,
+                &base_currency,
+                &output_file,
+                None,
+            );
+        }
 
-        let wiz = Wizard {};
+        let wiz = Wizard::new();
 
         return wiz.run(&printer, &base_currency, &output_file);
     }
     if let Some(matches) = root_matches.subcommand_matches("analyze") {
-        let input_file = normalize_path(matches.value_of("input").unwrap())?;
+        let input_file = normalize_file_path(matches.value_of("input").unwrap())?;
 
         //    let rate_string = matches.value_of("rate").unwrap();
         //    let rate = get_rate(rate_string)?;
         let filter_request = build_filter_request(&matches)?;
-
-        let parser = InvoiceParser::new();
-
         let verbosity = Verbosity::from_int(matches.occurrences_of("v"));
+
         if verbosity >= Verbosity::Info {
             printer.print_filter_request(&filter_request);
         }
 
-        let all_invoices = get_invoices(input_file, &parser, &base_currency, Some(&printer))?;
-        let invoices_to_print = if filter_request.empty() {
-            all_invoices
-        } else {
-            Filter::filter(&all_invoices, &filter_request)
-        };
-        printer.print_invoices(&base_currency, &invoices_to_print);
-
+        let invoices_to_print = load_and_display_invoices(
+            &printer,
+            &base_currency,
+            input_file,
+            Some(&filter_request),
+        )?;
         if filter_request.month().is_none() {
             for month in 1..13 {
                 filter_and_print_month_sum(&matches, &printer, &base_currency, &invoices_to_print, month);
@@ -156,6 +162,24 @@ fn execute(root_matches: ArgMatches) -> Res<()> {
     }
 
     Ok(())
+}
+
+fn load_and_display_invoices<P: AsRef<Path>>(
+    printer: &Printer,
+    base_currency: &Currency,
+    input_file: P,
+    filter_request: Option<&Request>,
+) -> Res<Vec<Invoice>> {
+    let parser = InvoiceParser::new();
+    let all_invoices = get_invoices(input_file, &parser, &base_currency, Some(&printer))?;
+    let invoices_to_print = if filter_request.is_none() || filter_request.unwrap().empty() {
+        all_invoices
+    } else {
+        Filter::filter(&all_invoices, &filter_request.unwrap())
+    };
+    printer.print_invoices(&base_currency, &invoices_to_print);
+
+    Ok(invoices_to_print)
 }
 
 fn filter_and_print_month_sum(matches: &ArgMatches, printer: &Printer, base_currency: &Currency, all_invoices: &Vec<Invoice>, month: u32) {
