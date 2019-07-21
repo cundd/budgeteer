@@ -2,8 +2,8 @@ use invoice::Invoice;
 use error::{Res, Error};
 use std::fs::OpenOptions;
 use std::io::prelude::*;
-use std::fs;
 use std::path::Path;
+use file::normalize_file_path;
 
 pub struct FileWriter {}
 
@@ -24,7 +24,7 @@ impl FileWriter {
     }
 
     pub fn check_output_path<P: AsRef<Path>>(path_str: P) -> Res<()> {
-        let path = fs::canonicalize(path_str)?;
+        let path = normalize_file_path(path_str.as_ref())?;
         if path.is_dir() {
             return Err(Error::FileIO("Output path must not be a directory".to_owned()));
         }
