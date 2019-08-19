@@ -24,7 +24,7 @@ mod verbosity;
 mod month;
 mod wizard;
 
-use clap::{Arg, App, ArgMatches, SubCommand};
+use clap::{Arg, App, ArgMatches, SubCommand, AppSettings};
 use rate_provider::RateProvider;
 use amount_converter::AmountConverter;
 use invoice::Invoice;
@@ -47,6 +47,7 @@ fn main() {
         .version("0.1.0")
         .author("Daniel Corn <info@corn.rest>")
         .about("Manage information about paid invoices")
+        .setting(AppSettings::SubcommandRequiredElseHelp)
 
         .subcommand(SubCommand::with_name("analyze")
             .alias("a")
@@ -160,6 +161,8 @@ fn execute(root_matches: ArgMatches) -> Res<()> {
 
         return Ok(());
     }
+
+//    printer.print_sum(&base_currency, &invoices_to_print);
 
     Ok(())
 }
