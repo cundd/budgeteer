@@ -1,6 +1,6 @@
 use dialoguer::{Input, Select, Confirmation};
 use error::Res;
-use chrono::{NaiveDate, Local};
+use chrono::{NaiveDate, Local, Datelike};
 use currency::Currency;
 use invoice::invoice_type::InvoiceType;
 use invoice::Invoice;
@@ -83,8 +83,16 @@ impl Wizard {
             .default(Local::now().format("%d.%m.%Y").to_string())
             .interact()?;
 
-        match NaiveDate::parse_from_str(&raw_date, "%d.%m.%Y") {
-            Ok(d) => Ok(d),
+        let prepared_raw_date = prepare_raw_date(raw_date);
+
+        match NaiveDate::parse_from_str(&prepared_raw_date, "%d.%m.%Y") {
+            Ok(d) => {
+                let parsed_date_string = d.format("%d.%m.%Y").to_string();
+                if prepared_raw_date != parsed_date_string {
+                    println!("{}", parsed_date_string);
+                }
+                Ok(d)
+            }
             Err(_) => self.read_date()
         }
     }
@@ -157,5 +165,47 @@ impl Wizard {
         let style = Style::new().yellow();
 
         Ok(self.term.write_str(&format!("{}", style.apply_to(prompt.into())))?)
+    }
+}
+
+fn prepare_raw_date<S: Into<String>>(raw_date: S) -> String {
+    let raw_date_string = raw_date.into();
+    {
+        let parts: Vec<&str> = raw_date_string.split('.').filter(|p| !p.trim().is_empty()).collect();
+        let len = parts.len();
+        let now = Local::now();
+        if len == 2 {
+            return format!("{}.{}.{:02}", parts[0], parts[1], now.year());
+        } else if len == 1 {
+            return format!("{}.{:02}.{:02}", parts[0], now.month(), now.year());
+        } else {}
+    }
+
+    raw_date_string
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_prepare_raw_date() {
+        let now_m_y = Local::now().format("%m.%Y").to_string();
+        assert_eq!(prepare_raw_date("23"), format!("23.{}", now_m_y));
+        assert_eq!(prepare_raw_date("3"), format!("3.{}", now_m_y));
+        assert_eq!(prepare_raw_date("03"), format!("03.{}", now_m_y));
+
+        assert_eq!(prepare_raw_date("23."), format!("23.{}", now_m_y));
+        assert_eq!(prepare_raw_date("3."), format!("3.{}", now_m_y));
+        assert_eq!(prepare_raw_date("03."), format!("03.{}", now_m_y));
+
+        let now_y = Local::now().format("%Y").to_string();
+        assert_eq!(prepare_raw_date("23.11."), format!("23.11.{}", now_y));
+        assert_eq!(prepare_raw_date("3.2."), format!("3.2.{}", now_y));
+        assert_eq!(prepare_raw_date("03.04."), format!("03.04.{}", now_y));
+
+        assert_eq!(prepare_raw_date("23.11"), format!("23.11.{}", now_y));
+        assert_eq!(prepare_raw_date("3.2"), format!("3.2.{}", now_y));
+        assert_eq!(prepare_raw_date("03.04"), format!("03.04.{}", now_y));
     }
 }
