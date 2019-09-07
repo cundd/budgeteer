@@ -8,6 +8,7 @@ extern crate core;
 extern crate dialoguer;
 extern crate serde;
 extern crate console;
+extern crate ansi_term;
 
 mod error;
 mod file;

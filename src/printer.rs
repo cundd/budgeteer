@@ -5,6 +5,9 @@ use filter::Request;
 use calculator::Calculator;
 use invoice::invoice_type::InvoiceType;
 use month::Month;
+use ansi_term::Colour::RGB;
+use ansi_term::{Style, Colour};
+use std::env;
 
 pub trait PrinterTrait {
     fn print_errors(&self, errors: Vec<Error>) {
@@ -19,6 +22,7 @@ pub trait PrinterTrait {
         for invoice in invoices {
             self.print_invoice(&base_currency, invoice)
         }
+        println!()
     }
 
     fn print_invoice(&self, base_currency: &Currency, invoice: &Invoice) -> ();
@@ -50,13 +54,14 @@ impl Printer {
         ];
         for invoice_type in types {
             let sum = Calculator::sum_for_type(invoices, invoice_type);
-            println!(
+
+            println!("{}", style_for_type(invoice_type, &format!(
                 "{:width$}: {} {: >8.2}",
                 format!("{}", invoice_type),
                 base_currency,
                 sum,
                 width = 22
-            );
+            )));
         }
     }
 
@@ -77,28 +82,61 @@ impl PrinterTrait for Printer {
 
     #[allow(dead_code)]
     fn print_invoice(&self, base_currency: &Currency, invoice: &Invoice) -> () {
-        let note = match invoice.note() {
-            Some(ref c) => c.to_owned(),
-            None => "".to_owned()
-        };
+        let note = get_prepared_note(invoice);
 
-        println!("Datum:     {}", invoice.date().format("%A %d.%m.%Y"));
-
-        if &invoice.amount().currency() != base_currency {
+        let amount_string = if &invoice.amount().currency() != base_currency {
             match invoice.clone().base_amount() {
-                Some(converted_amount) => println!(
-                    "Betrag:    {} ({})",
+                Some(converted_amount) => format!(
+                    "{} ({})",
                     invoice.amount(),
                     converted_amount
                 ),
-                None => println!("Betrag:    {}", invoice.amount())
+                None => format!("{}", invoice.amount())
             }
         } else {
-            println!("Betrag:    {}", invoice.amount());
+            format!("{}", invoice.amount())
+        };
+
+        let invoice_type = invoice.invoice_type();
+        let date = invoice.date().format("%A %d.%m.%Y");
+
+        if has_true_color_support() {
+            println!(
+                r#"
+{ } Datum   : {}
+Betrag      : {}
+Typ         : {}
+Notiz       : {}"#,
+                style_for_type(invoice_type, " "),
+                date,
+                amount_string,
+                invoice_type,
+                note,
+            );
+        } else {
+            println!(
+                r#"
+Datum       : {}
+Betrag      : {}
+Typ         : {}
+Notiz       : {}"#,
+                date,
+                amount_string,
+                invoice_type,
+                note,
+            );
         }
-        println!("Typ:       {}", invoice.invoice_type());
-        println!("Notiz:     {}", note);
-        println!();
+//        println!("{}", style_for_type(invoice_type, &format!(
+//            r#"
+//Datum      : {}
+//Betrag     : {}
+//Typ        : {}
+//Notiz      : {}"#,
+//            date,
+//            amount_string,
+//            invoice_type,
+//            note,
+//        )));
     }
 
     fn print_filter_request(&self, filter_request: &Request) -> () {
@@ -128,3 +166,72 @@ impl PrinterTrait for Printer {
     }
 }
 
+fn style_for_type(invoice_type: InvoiceType, text: &str) -> String {
+    if !has_true_color_support() {
+        return text.to_owned();
+    }
+    let prepared_multi_line = text.lines().map(
+        |l| {
+            if l.len() > 0 {
+                format!(" {} ", l)
+            } else {
+                "".to_owned()
+            }
+        }
+    ).collect::<Vec<String>>().join("\n");
+
+    Style::new().on(color_for_type(invoice_type, true)).paint(prepared_multi_line).to_string()
+}
+
+fn color_for_type(invoice_type: InvoiceType, light: bool) -> Colour {
+    if light {
+        match invoice_type {
+            InvoiceType::Car => RGB(112, 255, 81),
+            InvoiceType::Clothes => RGB(177, 255, 79),
+            InvoiceType::Eat => RGB(225, 255, 79),
+            InvoiceType::Fun => RGB(255, 237, 61),
+            InvoiceType::Gas => RGB(255, 200, 53),
+            InvoiceType::Health => RGB(255, 173, 45),
+            InvoiceType::Home => RGB(255, 136, 126),
+            InvoiceType::Telecommunication => RGB(255, 120, 186),
+            InvoiceType::Unknown => RGB(215, 151, 255),
+        }
+    } else {
+        match invoice_type {
+            InvoiceType::Car => RGB(84, 189, 60),
+            InvoiceType::Clothes => RGB(132, 189, 58),
+            InvoiceType::Eat => RGB(167, 189, 58),
+            InvoiceType::Fun => RGB(189, 174, 45),
+            InvoiceType::Gas => RGB(189, 146, 40),
+            InvoiceType::Health => RGB(189, 127, 34),
+            InvoiceType::Home => RGB(189, 101, 94),
+            InvoiceType::Telecommunication => RGB(189, 91, 140),
+            InvoiceType::Unknown => RGB(159, 113, 189),
+        }
+    }
+}
+
+fn has_true_color_support() -> bool {
+    match env::var("COLORTERM") {
+        Ok(v) => v == "truecolor",
+        Err(_) => false,
+    }
+}
+
+fn get_prepared_note(invoice: &Invoice) -> String {
+    if let Some(note) = invoice.note() {
+        let mut buffer: Vec<String> = vec![];
+
+        for l in note.split("<br />") {
+            if buffer.len() == 0 {
+                buffer.push(l.to_owned())
+            } else {
+                buffer.push(format!("              {}", l))
+            }
+        }
+
+        buffer.join("\n")
+    } else {
+        "".to_owned()
+    }
+}
