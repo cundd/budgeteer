@@ -55,13 +55,27 @@ impl Printer {
         for invoice_type in types {
             let sum = Calculator::sum_for_type(invoices, invoice_type);
 
-            println!("{}", style_for_type(invoice_type, &format!(
-                "{:width$}: {} {: >8.2}",
-                format!("{}", invoice_type),
-                base_currency,
-                sum,
-                width = 22
-            )));
+            println!(
+                "{}{}",
+                style_for_type(
+                    invoice_type,
+                    &format!(
+                        "{:width$}: {} {: >8.2}  ",
+                        format!("{}", invoice_type),
+                        base_currency,
+                        sum,
+                        width = 22
+                    ),
+                    false,
+                    true,
+                ),
+                style_for_type(
+                    invoice_type,
+                    &invoice_type.identifier().to_string(),
+                    true,
+                    true,
+                ),
+            );
         }
     }
 
@@ -107,7 +121,7 @@ impl PrinterTrait for Printer {
 Betrag      : {}
 Typ         : {}
 Notiz       : {}"#,
-                style_for_type(invoice_type, " "),
+                style_for_type(invoice_type, " ", false, true),
                 date,
                 amount_string,
                 invoice_type,
@@ -151,22 +165,35 @@ Notiz       : {}"#,
 
     fn print_sum(&self, base_currency: &Currency, invoices: &Vec<Invoice>) -> () {
         self.print_type_sum(base_currency, invoices);
-        println!("----------------------------------");
+        println!("-----------------------------------------");
         self.print_grand_total(base_currency, invoices);
     }
 
     fn print_month_sum(&self, month: Month, base_currency: &Currency, invoices: &Vec<Invoice>) -> () {
-        println!(
-            "{:width$}: {} {: >8.2}",
-            format!("{}", month),
-            base_currency,
-            Calculator::sum(invoices),
-            width = 12
-        );
+        if invoices.len() > 0 {
+            let max_type = Calculator::major_type(invoices).unwrap();
+
+            println!(
+                "{:width$}: {} {: >8.2} {}",
+                format!("{}", month),
+                base_currency,
+                Calculator::sum(invoices),
+                style_for_type(max_type, &max_type.identifier().to_string(), true, true),
+                width = 12
+            );
+        } else {
+            println!(
+                "{:width$}: {} {: >8.2}",
+                format!("{}", month),
+                base_currency,
+                0,
+                width = 12
+            )
+        }
     }
 }
 
-fn style_for_type(invoice_type: InvoiceType, text: &str) -> String {
+fn style_for_type(invoice_type: InvoiceType, text: &str, fg: bool, bg: bool) -> String {
     if !has_true_color_support() {
         return text.to_owned();
     }
@@ -180,7 +207,21 @@ fn style_for_type(invoice_type: InvoiceType, text: &str) -> String {
         }
     ).collect::<Vec<String>>().join("\n");
 
-    Style::new().on(color_for_type(invoice_type, true)).paint(prepared_multi_line).to_string()
+    if !fg && !bg {
+        return prepared_multi_line;
+    }
+
+    let style = if fg && bg {
+        Style::new()
+            .fg(color_for_type(invoice_type, false))
+            .on(color_for_type(invoice_type, true))
+    } else if fg {
+        Style::new().fg(color_for_type(invoice_type, false))
+    } else {
+        Style::new().on(color_for_type(invoice_type, true))
+    };
+
+    style.paint(prepared_multi_line).to_string()
 }
 
 fn color_for_type(invoice_type: InvoiceType, light: bool) -> Colour {

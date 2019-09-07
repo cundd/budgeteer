@@ -12,8 +12,6 @@ extern crate ansi_term;
 
 mod error;
 mod file;
-//mod file_writer;
-//mod file_reader;
 mod invoice;
 mod amount_converter;
 mod rate_provider;

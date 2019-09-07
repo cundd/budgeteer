@@ -3,10 +3,10 @@ use error::Error;
 use chrono::NaiveDate;
 use invoice::invoice_type::InvoiceType;
 use invoice::amount::Amount;
-use std;
 use file::LineParts;
 use currency::Currency;
 use std::cmp::Ordering;
+use std::error::Error as StdError;
 
 pub struct ParserResult {
     pub invoices: Vec<Invoice>,
@@ -69,13 +69,15 @@ impl InvoiceParser {
         let note = self.get_vec_part(&string_vec, 4);
         let base_amount = None;
 
-        Ok(Invoice {
-            date,
-            amount,
-            base_amount,
-            invoice_type,
-            note,
-        })
+
+        Ok(Invoice::new(date, amount, base_amount, invoice_type, note))
+//        Ok(Invoice {
+//            date,
+//            amount,
+//            base_amount,
+//            invoice_type,
+//            note,
+//        })
     }
 
     fn parse_date(&self, string_vec: &Vec<String>) -> Result<NaiveDate, Error> {
@@ -85,7 +87,7 @@ impl InvoiceParser {
                 Err(e) => Err(Error::ParseError(format!(
                     "Could not parse date '{}': {}",
                     s,
-                    std::error::Error::description(&e)
+                    StdError::description(&e)
                 )))
             }
             Err(e) => Err(e)

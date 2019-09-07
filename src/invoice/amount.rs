@@ -1,5 +1,6 @@
 use std::fmt;
 use currency::Currency;
+use std::cmp::Ordering;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Amount {
@@ -29,5 +30,11 @@ impl Amount {
 impl fmt::Display for Amount {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{} {:.2}", self.currency, self.value)
+    }
+}
+
+impl PartialOrd for Amount {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        self.value.partial_cmp(&other.value)
     }
 }

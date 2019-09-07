@@ -2,12 +2,13 @@ use std::fmt;
 use invoice::invoice_type::InvoiceType;
 use invoice::amount::Amount;
 use chrono::prelude::*;
+use std::cmp::Ordering;
 
 pub mod invoice_type;
 pub mod invoice_parser;
 pub mod amount;
 
-#[derive(Clone)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Invoice {
     date: NaiveDate,
     amount: Amount,
@@ -75,3 +76,21 @@ Notiz:     {}\
         )
     }
 }
+
+//impl PartialOrd for Invoice {
+//    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+//        let a_base_amount = self.base_amount();
+//        let b_base_amount = other.base_amount();
+//        match a_base_amount {
+//            Some(a_amount) => match b_base_amount {
+//                Some(b_amount) => a_amount.partial_cmp(&b_amount),
+//                None => Some(Ordering::Greater)
+//            }
+//            None => if b_base_amount.is_some() {
+//                Some(Ordering::Less)
+//            } else {
+//                Some(Ordering::Equal)
+//            }
+//        }
+//    }
+//}
