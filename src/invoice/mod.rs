@@ -77,20 +77,20 @@ Notiz:     {}\
     }
 }
 
-//impl PartialOrd for Invoice {
-//    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-//        let a_base_amount = self.base_amount();
-//        let b_base_amount = other.base_amount();
-//        match a_base_amount {
-//            Some(a_amount) => match b_base_amount {
-//                Some(b_amount) => a_amount.partial_cmp(&b_amount),
-//                None => Some(Ordering::Greater)
-//            }
-//            None => if b_base_amount.is_some() {
-//                Some(Ordering::Less)
-//            } else {
-//                Some(Ordering::Equal)
-//            }
-//        }
-//    }
-//}
+impl PartialOrd for Invoice {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        let a_base_amount = self.base_amount();
+        let b_base_amount = other.base_amount();
+        match a_base_amount {
+            Some(a_amount) => match b_base_amount {
+                Some(b_amount) => a_amount.partial_cmp(&b_amount),
+                None => Some(Ordering::Greater)
+            }
+            None => if b_base_amount.is_some() {
+                Some(Ordering::Less)
+            } else {
+                Some(Ordering::Equal)
+            }
+        }
+    }
+}
