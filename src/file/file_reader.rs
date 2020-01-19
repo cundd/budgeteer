@@ -1,7 +1,7 @@
 use std::fs::File;
 use std::io;
 use std::io::{BufReader, BufRead};
-use error::Error;
+use crate::error::Error;
 use std::path::Path;
 
 pub type LineParts = Vec<String>;

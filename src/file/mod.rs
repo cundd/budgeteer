@@ -6,7 +6,7 @@ pub use self::file_reader::LineParts;
 pub use self::file_writer::FileWriter;
 use std::{fs, env};
 use std::path::{PathBuf, Path};
-use error::{Res, Error};
+use crate::error::{Res, Error};
 
 pub fn normalize_file_path<P: AsRef<Path>>(path_input: P) -> Res<PathBuf> {
     let path = path_input.as_ref();

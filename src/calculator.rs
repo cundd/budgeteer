@@ -1,6 +1,6 @@
-use invoice::Invoice;
-use invoice::invoice_type::InvoiceType;
-use invoice::amount::Amount;
+use crate::invoice::Invoice;
+use crate::invoice::invoice_type::InvoiceType;
+use crate::invoice::amount::Amount;
 
 pub struct Calculator {}
 

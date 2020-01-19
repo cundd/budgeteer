@@ -1,7 +1,7 @@
-use error::{Error, Res};
+use crate::error::{Error, Res};
 use std::str;
 use std::fmt;
-use invoice::invoice_type::InvoiceType;
+use crate::invoice::invoice_type::InvoiceType;
 
 #[derive(Clone)]
 pub struct Request {

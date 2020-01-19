@@ -1,5 +1,5 @@
 use std::fmt;
-use currency::Currency;
+use crate::currency::Currency;
 use std::cmp::Ordering;
 
 #[derive(Debug, Clone, PartialEq)]

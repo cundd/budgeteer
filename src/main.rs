@@ -24,21 +24,21 @@ mod month;
 mod wizard;
 
 use clap::{Arg, App, ArgMatches, SubCommand, AppSettings};
-use rate_provider::RateProvider;
-use amount_converter::AmountConverter;
-use invoice::Invoice;
-use error::{Error, Res};
-use filter::{Filter, Request};
-use file::{FileReader, normalize_file_path};
-use invoice::invoice_parser::InvoiceParser;
-use currency::Currency;
+use crate::rate_provider::RateProvider;
+use crate::amount_converter::AmountConverter;
+use crate::invoice::Invoice;
+use crate::error::{Error, Res};
+use crate::filter::{Filter, Request};
+use crate::file::{FileReader, normalize_file_path};
+use crate::invoice::invoice_parser::InvoiceParser;
+use crate::currency::Currency;
 use std::collections::HashSet;
-use verbosity::Verbosity;
-use printer::{Printer, PrinterTrait};
+use crate::verbosity::Verbosity;
+use crate::printer::{Printer, PrinterTrait};
 use chrono::{Datelike, Local};
-use invoice::invoice_type::InvoiceType;
-use wizard::Wizard;
-use file::FileWriter;
+use crate::invoice::invoice_type::InvoiceType;
+use crate::wizard::Wizard;
+use crate::file::FileWriter;
 use std::path::Path;
 
 fn main() {

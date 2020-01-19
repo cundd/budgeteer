@@ -1,18 +1,18 @@
 use dialoguer::{Input, Select, Confirmation};
-use error::Res;
+use crate::error::Res;
 use chrono::{NaiveDate, Local, Datelike};
-use currency::Currency;
-use invoice::invoice_type::InvoiceType;
-use invoice::Invoice;
-use invoice::amount::Amount;
+use crate::currency::Currency;
+use crate::invoice::invoice_type::InvoiceType;
+use crate::invoice::Invoice;
+use crate::invoice::amount::Amount;
 use dialoguer::theme::{ColorfulTheme, Theme};
-use printer::{Printer, PrinterTrait};
-use file::FileWriter;
+use crate::printer::{Printer, PrinterTrait};
+use crate::file::FileWriter;
 use std::path::Path;
 use console::{Term, Style};
 
 pub struct Wizard {
-    theme: Box<Theme>,
+    theme: Box<dyn Theme>,
     #[allow(dead_code)]
     term: Term,
 }

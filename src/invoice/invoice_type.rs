@@ -1,6 +1,6 @@
 use std::fmt;
 use std::str::FromStr;
-use error::Error;
+use crate::error::Error;
 
 #[derive(Clone, PartialOrd, PartialEq, Copy, Debug)]
 pub enum InvoiceType {

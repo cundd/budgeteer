@@ -1,10 +1,10 @@
-use error::Error;
-use invoice::Invoice;
-use currency::Currency;
-use filter::Request;
-use calculator::Calculator;
-use invoice::invoice_type::InvoiceType;
-use month::Month;
+use crate::error::Error;
+use crate::invoice::Invoice;
+use crate::currency::Currency;
+use crate::filter::Request;
+use crate::calculator::Calculator;
+use crate::invoice::invoice_type::InvoiceType;
+use crate::month::Month;
 use ansi_term::Colour::RGB;
 use ansi_term::{Style, Colour};
 use std::env;

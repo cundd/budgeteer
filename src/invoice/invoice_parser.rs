@@ -1,10 +1,10 @@
-use invoice::Invoice;
-use error::Error;
+use crate::invoice::Invoice;
+use crate::error::Error;
 use chrono::NaiveDate;
-use invoice::invoice_type::InvoiceType;
-use invoice::amount::Amount;
-use file::LineParts;
-use currency::Currency;
+use crate::invoice::invoice_type::InvoiceType;
+use crate::invoice::amount::Amount;
+use crate::file::LineParts;
+use crate::currency::Currency;
 use std::cmp::Ordering;
 use std::error::Error as StdError;
 

@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use currency::Currency;
+use crate::currency::Currency;
 
 pub fn all() -> HashMap<&'static str, Currency> {
     let mut map = HashMap::new();

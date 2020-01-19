@@ -2,7 +2,7 @@ mod request;
 
 pub use self::request::*;
 
-use invoice::Invoice;
+use crate::invoice::Invoice;
 use chrono::Datelike;
 
 pub struct Filter {}

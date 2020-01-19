@@ -1,6 +1,6 @@
 use std::fmt;
-use invoice::invoice_type::InvoiceType;
-use invoice::amount::Amount;
+use crate::invoice::invoice_type::InvoiceType;
+use crate::invoice::amount::Amount;
 use chrono::prelude::*;
 use std::cmp::Ordering;
 

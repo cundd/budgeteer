@@ -1,7 +1,7 @@
 use chrono::NaiveDate;
 use serde_json::{Value, from_reader};
-use error::Res;
-use error::Error;
+use crate::error::Res;
+use crate::error::Error;
 use std::collections::HashMap;
 
 pub struct RateProvider {}

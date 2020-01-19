@@ -2,6 +2,7 @@
 name = "budgeteer"
 version = "0.1.1"
 authors = ["Daniel Corn <info@corn.rest>"]
+edition = "2018"
 
 [dependencies]
 clap = "2.33.0"

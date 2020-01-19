@@ -1,9 +1,9 @@
 //mod exchange_rates;
-use invoice::amount::Amount;
+use crate::invoice::amount::Amount;
 use std::collections::HashMap;
-use rate_provider::Rate;
-use invoice::Invoice;
-use currency::Currency;
+use crate::rate_provider::Rate;
+use crate::invoice::Invoice;
+use crate::currency::Currency;
 
 pub struct AmountConverter {
     base_currency: Currency,

@@ -1,8 +1,8 @@
 mod currency_data;
 
 use std::fmt;
-use error::Res;
-use error::Error;
+use crate::error::Res;
+use crate::error::Error;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Currency {
