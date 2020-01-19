@@ -43,7 +43,7 @@ use std::path::Path;
 
 fn main() {
     let matches = App::new("Budgeteer")
-        .version("0.1.0")
+        .version(env!("CARGO_PKG_VERSION"))
         .author("Daniel Corn <info@corn.rest>")
         .about("Manage information about paid invoices")
         .setting(AppSettings::SubcommandRequiredElseHelp)
@@ -51,7 +51,6 @@ fn main() {
         .subcommand(SubCommand::with_name("analyze")
             .alias("a")
             .about("Show information about paid invoices")
-            .version("0.1.0")
             .arg(Arg::with_name("input")
                 .help("Budget file to use")
                 .required(true)
@@ -88,7 +87,6 @@ fn main() {
         .subcommand(SubCommand::with_name("wizard")
             .alias("w")
             .about("Interactive wizard to create new rows")
-            .version("0.1.0")
             .arg(Arg::with_name("output")
                 .help("Budget file to write")
                 .required(true)
@@ -97,8 +95,7 @@ fn main() {
                 .short("d")
                 .help("print debug information verbosely")))
         .subcommand(SubCommand::with_name("show-types")
-            .about("Display the available types")
-            .version("0.1.0"))
+            .about("Display the available types"))
         .get_matches();
 
     match execute(matches) {
