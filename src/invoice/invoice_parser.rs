@@ -101,9 +101,12 @@ impl InvoiceParser {
             "Could not read amount from line",
         )?;
 
-        match amount_string.trim().parse::<f64>() {
+        match amount_string
+            .trim()
+            .replace(',', ".") // Replace ',' with '.'
+            .parse::<f64>() {
             Ok(f) => Ok(f),
-            Err(e) => Err(Error::from(e))
+            Err(e) => Err(Error::ParseError(format!("Could not parse amount '{}': {}", amount_string, e)))
         }
     }
 
