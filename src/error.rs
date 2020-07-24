@@ -93,7 +93,7 @@ impl error::Error for Error {
 
 impl From<io::Error> for Error {
     fn from(error: io::Error) -> Self {
-        Error::FileIO(format!("{}", error::Error::description(&error)))
+        Error::FileIO(format!("{}", &error))
     }
 }
 
@@ -111,19 +111,19 @@ impl From<num::ParseIntError> for Error {
 
 impl From<chrono::ParseError> for Error {
     fn from(e: chrono::ParseError) -> Self {
-        Error::ParseError(format!("Could not parse date: {}", error::Error::description(&e)))
+        Error::ParseError(format!("Could not parse date: {}", &e))
     }
 }
 
 impl From<reqwest::Error> for Error {
     fn from(e: reqwest::Error) -> Self {
-        Error::RateError(format!("Could not fetch rates: {}", error::Error::description(&e)))
+        Error::RateError(format!("Could not fetch rates: {}", &e))
     }
 }
 
 impl From<serde_json::Error> for Error {
     fn from(e: serde_json::Error) -> Self {
-        Error::RateError(format!("Could not parse rates JSON: {}", error::Error::description(&e)))
+        Error::RateError(format!("Could not parse rates JSON: {}", &e))
     }
 }
 

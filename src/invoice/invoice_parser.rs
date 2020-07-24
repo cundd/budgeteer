@@ -6,7 +6,6 @@ use crate::invoice::amount::Amount;
 use crate::file::LineParts;
 use crate::currency::Currency;
 use std::cmp::Ordering;
-use std::error::Error as StdError;
 
 pub struct ParserResult {
     pub invoices: Vec<Invoice>,
@@ -87,7 +86,7 @@ impl InvoiceParser {
                 Err(e) => Err(Error::ParseError(format!(
                     "Could not parse date '{}': {}",
                     s,
-                    StdError::description(&e)
+                    &e
                 )))
             }
             Err(e) => Err(e)
