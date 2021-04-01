@@ -1,4 +1,4 @@
-use dialoguer::{Input, Select, Confirmation};
+use dialoguer::{Input, Select, Confirm};
 use crate::error::Res;
 use chrono::{NaiveDate, Local, Datelike};
 use crate::currency::Currency;
@@ -9,7 +9,7 @@ use dialoguer::theme::{ColorfulTheme, Theme};
 use crate::printer::{Printer, PrinterTrait};
 use crate::file::FileWriter;
 use std::path::Path;
-use console::{Term, Style};
+use dialoguer::console::{Term, Style};
 
 pub struct Wizard {
     theme: Box<dyn Theme>,
@@ -44,11 +44,11 @@ impl Wizard {
         println!("Read the following invoice:");
         printer.print_invoice(&base_currency, &invoice);
 
-        if Confirmation::with_theme(self.theme.as_ref()).with_text("Save this invoice?").interact()? {
+        if Confirm::with_theme(self.theme.as_ref()).with_prompt("Save this invoice?").interact()? {
             FileWriter::write_invoice(&output_file, &invoice)?;
             println!("Saved the new invoice");
 
-            if Confirmation::new().with_text("Do you want to insert another invoice?").interact()? {
+            if Confirm::new().with_prompt("Do you want to insert another invoice?").interact()? {
                 self.run_inner(printer, base_currency, output_file)
             } else {
                 Ok(())

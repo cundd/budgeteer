@@ -33,8 +33,8 @@ impl RateProvider {
     pub fn fetch_rates(start: NaiveDate, end: NaiveDate, symbols: Vec<&str>) -> Res<HashMap<String, Rate>> {
         let request_url = RateProvider::build_request_url(start, end, &symbols);
 
-        let body = reqwest::get(&request_url)?.text()?;
-        let response = reqwest::get(&request_url)?;
+        let body = reqwest::blocking::get(&request_url)?.text()?;
+        let response = reqwest::blocking::get(&request_url)?;
         let raw_rates = match from_reader::<_, RawRates>(response) {
             Ok(r) => r,
             Err(e) => return Err(Error::ParseError(format!("{} for body '{}'", e, body)))
