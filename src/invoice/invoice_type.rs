@@ -6,7 +6,7 @@ use crate::error::Error;
 pub enum InvoiceType {
     // "A" => Car / Auto
     Car,
-    // "C" => Clothes & Cosmetics / Kleidung
+    // "C" => Clothes, Body & Cosmetics / Kleidung
     Clothes,
     // "E" => Eat / Essen
     Eat,
@@ -29,7 +29,7 @@ impl InvoiceType {
     pub fn from_str(input: &str) -> Self {
         match input.to_uppercase().as_str() {
             "A" | "CAR" | "AUTO" => InvoiceType::Car,
-            "C" | "K" | "CLOTHES" | "KLEIDUNG" => InvoiceType::Clothes,
+            "C" | "K" | "CLOTHES" | "BODY" | "KLEIDUNG" => InvoiceType::Clothes,
             "E" | "EAT" | "ESSEN" => InvoiceType::Eat,
             "F" | "FUN" | "HOBBY" => InvoiceType::Fun,
             "T" | "GAS" | "TANKEN" => InvoiceType::Gas,
