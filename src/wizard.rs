@@ -136,7 +136,7 @@ impl Wizard {
     }
 
     fn read_invoice_type(&self) -> Res<InvoiceType> {
-        let all = InvoiceType::all();
+        let all = InvoiceType::all_known();
         // self.prompt("Type");
         let i = Select::with_theme(&ColorfulTheme::default())
             .with_prompt("Type")
@@ -145,11 +145,6 @@ impl Wizard {
             .interact()?;
 
         Ok(all[i])
-
-//        // self.prompt("Type");
-//        Ok(Input::<InvoiceType>::with_theme(self.theme.as_ref())
-//            .with_prompt("Type")
-//            .interact()?)
     }
 
     fn read_note(&self) -> Res<String> {

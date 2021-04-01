@@ -6,9 +6,6 @@ use chrono;
 
 pub type Res<T, E = Error> = ::std::result::Result<T, E>;
 
-// Define our error types. These may be customized for our error handling cases.
-// Now we will be able to write our own errors, defer to an underlying error
-// implementation, or do something in between.
 #[derive(Debug, Clone, PartialEq)]
 pub enum Error {
     FileIO(String),
@@ -21,31 +18,16 @@ pub enum Error {
     LineComment,
 }
 
-// This is important for other errors to wrap this one.
 impl Error {
     fn description(&self) -> &str {
         match self {
-            &Error::FileIO(_) => {
-                "File IO error"
-            }
-            &Error::ParseError(_) => {
-                "Parse Error"
-            }
-            &Error::General(_) => {
-                "General Error"
-            }
-            &Error::LineComment => {
-                "Line comment"
-            }
-            &Error::LineEmpty => {
-                "Line empty"
-            }
-            &Error::LineSeparator => {
-                "Line separator"
-            }
-            &Error::RateError(_) => {
-                "Rate Error"
-            }
+            &Error::FileIO(_) => "File IO error",
+            &Error::ParseError(_) => "Parse Error",
+            &Error::General(_) => "General Error",
+            &Error::LineComment => "Line comment",
+            &Error::LineEmpty => "Line empty",
+            &Error::LineSeparator => "Line separator",
+            &Error::RateError(_) => "Rate Error",
         }
     }
 
@@ -54,12 +36,6 @@ impl Error {
     }
 }
 
-
-// Generation of an error is completely separate from how it is displayed.
-// There's no need to be concerned about cluttering complex logic with the display style.
-//
-// Note that we don't store any extra info about the errors. This means we can't state
-// which string failed to parse without modifying our types to carry that information.
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
@@ -74,22 +50,11 @@ impl fmt::Display for Error {
     }
 }
 
-// This is important for other errors to wrap this one.
 impl error::Error for Error {
     fn description(&self) -> &str {
         Error::description(self)
     }
 }
-
-//impl<'a> error::Error for &'a Error {
-//    fn description(&self) -> &str {
-//        match self {
-//            Error::FileIO => {
-//                "File IO error"
-//            }
-//        }
-//    }
-//}
 
 impl From<io::Error> for Error {
     fn from(error: io::Error) -> Self {

@@ -41,18 +41,8 @@ impl Printer {
     }
 
     fn print_type_sum(&self, base_currency: &Currency, invoices: &Vec<Invoice>) -> () {
-        let types = vec![
-            InvoiceType::Car,
-            InvoiceType::Clothes,
-            InvoiceType::Eat,
-            InvoiceType::Fun,
-            InvoiceType::Gas,
-            InvoiceType::Health,
-            InvoiceType::Home,
-            InvoiceType::Telecommunication,
-            InvoiceType::Unknown,
-        ];
-        for invoice_type in types {
+        for invoice_type in InvoiceType::all().iter() {
+            let invoice_type = *invoice_type;
             let sum = Calculator::sum_for_type(invoices, invoice_type);
 
             println!(
@@ -140,17 +130,6 @@ Notiz       : {}"#,
                 note,
             );
         }
-//        println!("{}", style_for_type(invoice_type, &format!(
-//            r#"
-//Datum      : {}
-//Betrag     : {}
-//Typ        : {}
-//Notiz      : {}"#,
-//            date,
-//            amount_string,
-//            invoice_type,
-//            note,
-//        )));
     }
 
     fn print_filter_request(&self, filter_request: &Request) -> () {

@@ -1,14 +1,5 @@
 #[macro_use]
 extern crate serde_derive;
-extern crate reqwest;
-extern crate clap;
-extern crate chrono;
-extern crate serde_json;
-extern crate core;
-extern crate dialoguer;
-extern crate serde;
-extern crate console;
-extern crate ansi_term;
 
 mod error;
 mod file;
@@ -158,8 +149,6 @@ fn execute(root_matches: ArgMatches) -> Res<()> {
         return Ok(());
     }
 
-//    printer.print_sum(&base_currency, &invoices_to_print);
-
     Ok(())
 }
 
@@ -264,7 +253,7 @@ fn collect_currencies(invoices: &Vec<Invoice>) -> Vec<&str> {
 
 fn show_types() -> Res<()> {
     println!("Available types:");
-    for invoice_type in &InvoiceType::all() {
+    for invoice_type in &InvoiceType::all_known() {
         println!("- {}: {}", invoice_type.identifier(), invoice_type);
     }
     Ok(())

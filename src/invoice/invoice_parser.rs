@@ -48,8 +48,8 @@ impl InvoiceParser {
 
     pub fn build_from_vec(&self, parts: Vec<&str>) -> Result<Invoice, Error> {
         let string_vec: Vec<String> =
-            parts.iter()
-                .map(|x| { String::from(*x) })
+            parts.into_iter()
+                .map(String::from)
                 .collect();
 
         let date = self.parse_date(&string_vec)?;
@@ -68,15 +68,7 @@ impl InvoiceParser {
         let note = self.get_vec_part(&string_vec, 4);
         let base_amount = None;
 
-
         Ok(Invoice::new(date, amount, base_amount, invoice_type, note))
-//        Ok(Invoice {
-//            date,
-//            amount,
-//            base_amount,
-//            invoice_type,
-//            note,
-//        })
     }
 
     fn parse_date(&self, string_vec: &Vec<String>) -> Result<NaiveDate, Error> {
@@ -140,7 +132,7 @@ mod tests {
                 assert!(i.note.is_some());
                 assert_eq!(i.note.unwrap(), "Gas station");
             }
-            Err(e) => panic!(e)
+            Err(e) => panic!("{}", e)
         };
     }
 }
