@@ -1,6 +1,7 @@
+use crate::currency::Currency;
+use crate::invoice::amount::Amount;
 use crate::invoice::Invoice;
 use crate::invoice::invoice_type::InvoiceType;
-use crate::invoice::amount::Amount;
 
 pub struct Calculator {}
 
@@ -63,6 +64,16 @@ impl Calculator {
         for invoice in invoices {
             if invoice.invoice_type() == invoice_type {
                 if let Some(a) = invoice.base_amount() { sum += a.value() }
+            }
+        }
+        sum
+    }
+
+    pub fn sum_for_type_and_currency(invoices: &[Invoice], invoice_type: InvoiceType, currency: &Currency) -> f64 {
+        let mut sum = 0.0;
+        for invoice in invoices {
+            if invoice.invoice_type() == invoice_type && invoice.amount().currency_ref() == currency {
+                sum += invoice.amount_ref().value()
             }
         }
         sum

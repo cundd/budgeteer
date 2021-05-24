@@ -1,8 +1,10 @@
-use chrono::NaiveDate;
-use serde_json::{Value, from_reader};
-use crate::error::Res;
-use crate::error::Error;
 use std::collections::HashMap;
+
+use chrono::NaiveDate;
+use serde_json::{from_reader, Value};
+
+use crate::error::Error;
+use crate::error::Res;
 
 pub struct RateProvider {}
 
@@ -37,13 +39,13 @@ impl RateProvider {
         let response = reqwest::blocking::get(&request_url)?;
         let raw_rates = match from_reader::<_, RawRates>(response) {
             Ok(r) => r,
-            Err(e) => return Err(Error::ParseError(format!("{} for body '{}'", e, body)))
+            Err(e) => return Err(Error::RateError(format!("{} for body '{}'", e, body)))
         };
         let rates = raw_rates.rates.iter()
-            .flat_map(
-                |(raw_date, raw_rate)| RateProvider::build_rate(&symbols, &raw_date, raw_rate)
-            )
-            .collect::<Vec<Rate>>();
+                             .flat_map(
+                                 |(raw_date, raw_rate)| RateProvider::build_rate(&symbols, &raw_date, raw_rate)
+                             )
+                             .collect::<Vec<Rate>>();
 
         let mut result_map = HashMap::new();
         for rate in rates {
@@ -64,7 +66,9 @@ impl RateProvider {
 
         let mut rates = vec![];
         for currency_symbol in symbols.iter() {
-            if let Some(r) = raw_rate.get(currency_symbol) { rates.push(Rate::new(date, currency_symbol, r.as_f64().unwrap())) }
+            if let Some(r) = raw_rate.get(currency_symbol) {
+                rates.push(Rate::new(date, currency_symbol, r.as_f64().unwrap()))
+            }
         }
 
         rates

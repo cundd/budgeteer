@@ -1,8 +1,11 @@
-use std::fmt;
-use crate::invoice::invoice_type::InvoiceType;
-use crate::invoice::amount::Amount;
-use chrono::prelude::*;
 use std::cmp::Ordering;
+use std::fmt;
+
+use chrono::prelude::*;
+
+use crate::currency::Currency;
+use crate::invoice::amount::Amount;
+use crate::invoice::invoice_type::InvoiceType;
 
 pub mod invoice_type;
 pub mod invoice_parser;
@@ -93,4 +96,8 @@ impl PartialOrd for Invoice {
             }
         }
     }
+}
+
+pub fn contains_invoice_in_currency(invoices: &[Invoice], currency: &Currency) -> bool {
+    invoices.iter().find(|invoice| invoice.amount_ref().currency_ref() == currency).is_some()
 }

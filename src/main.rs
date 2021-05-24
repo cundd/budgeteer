@@ -1,36 +1,40 @@
 #[macro_use]
+extern crate lazy_static;
+#[macro_use]
 extern crate serde_derive;
 
+use std::collections::{HashMap, HashSet};
+use std::path::Path;
+
+use chrono::{Datelike, Local};
+use clap::{App, AppSettings, Arg, ArgMatches, SubCommand};
+
+use crate::amount_converter::AmountConverter;
+use crate::currency::Currency;
+use crate::error::{Error, Res};
+use crate::file::FileWriter;
+use crate::file::{normalize_file_path, FileReader};
+use crate::filter::{Filter, Request};
+use crate::invoice::invoice_parser::InvoiceParser;
+use crate::invoice::invoice_type::InvoiceType;
+use crate::invoice::Invoice;
+use crate::printer::{Printer, PrinterTrait};
+use crate::rate_provider::RateProvider;
+use crate::verbosity::Verbosity;
+use crate::wizard::Wizard;
+
+mod amount_converter;
+mod calculator;
+mod currency;
 mod error;
 mod file;
-mod invoice;
-mod amount_converter;
-mod rate_provider;
-mod printer;
 mod filter;
-mod currency;
-mod calculator;
-mod verbosity;
+mod invoice;
 mod month;
+mod printer;
+mod rate_provider;
+mod verbosity;
 mod wizard;
-
-use clap::{Arg, App, ArgMatches, SubCommand, AppSettings};
-use crate::rate_provider::RateProvider;
-use crate::amount_converter::AmountConverter;
-use crate::invoice::Invoice;
-use crate::error::{Error, Res};
-use crate::filter::{Filter, Request};
-use crate::file::{FileReader, normalize_file_path};
-use crate::invoice::invoice_parser::InvoiceParser;
-use crate::currency::Currency;
-use std::collections::HashSet;
-use crate::verbosity::Verbosity;
-use crate::printer::{Printer, PrinterTrait};
-use chrono::{Datelike, Local};
-use crate::invoice::invoice_type::InvoiceType;
-use crate::wizard::Wizard;
-use crate::file::FileWriter;
-use std::path::Path;
 
 fn main() {
     let matches = App::new("Budgeteer")
@@ -38,64 +42,84 @@ fn main() {
         .author("Daniel Corn <info@corn.rest>")
         .about("Manage information about paid invoices")
         .setting(AppSettings::SubcommandRequiredElseHelp)
-
-        .subcommand(SubCommand::with_name("analyze")
-            .alias("a")
-            .about("Show information about paid invoices")
-            .arg(Arg::with_name("input")
-                .help("Budget file to use")
-                .required(true)
-                .index(1))
-//        .arg(Arg::with_name("rate")
-//            .long("rate")
-//            .short("r")
-//            .takes_value(true)
-//            .help("Currency change rate (CHF per €)"))
-            .arg(Arg::with_name("year")
-                .long("year")
-                .short("y")
-                .takes_value(true)
-                .help("Filter by year"))
-            .arg(Arg::with_name("type")
-                .long("type")
-                .short("t")
-                .takes_value(true)
-                .help("Filter by type"))
-            .arg(Arg::with_name("month")
-                .long("month")
-                .short("m")
-                .takes_value(true)
-                .help("Filter by month"))
-            .arg(Arg::with_name("day")
-                .long("day")
-                .short("d")
-                .takes_value(true)
-                .help("Filter by day"))
-            .arg(Arg::with_name("v")
-                .short("v")
-                .multiple(true)
-                .help("Level of verbosity")))
-        .subcommand(SubCommand::with_name("wizard")
-            .alias("w")
-            .about("Interactive wizard to create new rows")
-            .arg(Arg::with_name("output")
-                .help("Budget file to write")
-                .required(true)
-                .index(1))
-            .arg(Arg::with_name("debug")
-                .short("d")
-                .help("print debug information verbosely")))
-        .subcommand(SubCommand::with_name("show-types")
-            .about("Display the available types"))
+        .subcommand(
+            SubCommand::with_name("analyze")
+                .alias("a")
+                .about("Show information about paid invoices")
+                .arg(
+                    Arg::with_name("input")
+                        .help("Budget file to use")
+                        .required(true)
+                        .index(1),
+                )
+                //        .arg(Arg::with_name("rate")
+                //            .long("rate")
+                //            .short("r")
+                //            .takes_value(true)
+                //            .help("Currency change rate (CHF per €)"))
+                .arg(
+                    Arg::with_name("year")
+                        .long("year")
+                        .short("y")
+                        .takes_value(true)
+                        .help("Filter by year (default is the current year)"),
+                )
+                .arg(
+                    Arg::with_name("type")
+                        .long("type")
+                        .short("t")
+                        .takes_value(true)
+                        .help("Filter by type"),
+                )
+                .arg(
+                    Arg::with_name("month")
+                        .long("month")
+                        .short("m")
+                        .takes_value(true)
+                        .help("Filter by month"),
+                )
+                .arg(
+                    Arg::with_name("day")
+                        .long("day")
+                        .short("d")
+                        .takes_value(true)
+                        .help("Filter by day"),
+                )
+                .arg(
+                    Arg::with_name("v")
+                        .short("v")
+                        .multiple(true)
+                        .help("Level of verbosity"),
+                ),
+        )
+        .subcommand(
+            SubCommand::with_name("wizard")
+                .alias("w")
+                .about("Interactive wizard to create new rows")
+                .arg(
+                    Arg::with_name("output")
+                        .help("Budget file to write")
+                        .required(true)
+                        .index(1),
+                )
+                .arg(
+                    Arg::with_name("debug")
+                        .short("d")
+                        .help("print debug information verbosely"),
+                ),
+        )
+        .subcommand(SubCommand::with_name("show-types").about("Display the available types"))
         .get_matches();
 
-    if let Err(e) = execute(matches) { eprintln!("{}", e) }
+    if let Err(e) = execute(matches) {
+        eprintln!("{}", e)
+    }
 }
 
 fn execute(root_matches: ArgMatches) -> Res<()> {
     if root_matches.subcommand_matches("show-types").is_some() {
         show_types();
-        return Ok(())
+        return Ok(());
     }
 
     let printer = Printer::new();
@@ -106,12 +130,7 @@ fn execute(root_matches: ArgMatches) -> Res<()> {
         FileWriter::check_output_path(&output_file)?;
         if output_file.exists() {
             println!("The output file contains these invoices:");
-            let _ = load_and_display_invoices(
-                &printer,
-                &base_currency,
-                &output_file,
-                None,
-            );
+            let _ = load_and_display_invoices(&printer, &base_currency, &output_file, None);
         }
 
         let wiz = Wizard::new();
@@ -130,21 +149,23 @@ fn execute(root_matches: ArgMatches) -> Res<()> {
             printer.print_filter_request(&filter_request);
         }
 
-        let invoices_to_print = load_and_display_invoices(
-            &printer,
-            &base_currency,
-            input_file,
-            Some(&filter_request),
-        )?;
+        let invoices_to_print =
+            load_and_display_invoices(&printer, &base_currency, input_file, Some(&filter_request))?;
+
+        // Print an overview of the months, if there is NO filter for the month
         if filter_request.month().is_none() {
             for month in 1..13 {
-                filter_and_print_month_sum(&matches, &printer, &base_currency, &invoices_to_print, month);
+                filter_and_print_month_sum(
+                    &matches,
+                    &printer,
+                    &base_currency,
+                    &invoices_to_print,
+                    month,
+                );
             }
             println!()
         }
         printer.print_sum(&base_currency, &invoices_to_print);
-
-        return Ok(());
     }
 
     Ok(())
@@ -168,7 +189,13 @@ fn load_and_display_invoices<P: AsRef<Path>>(
     Ok(invoices_to_print)
 }
 
-fn filter_and_print_month_sum(matches: &ArgMatches, printer: &Printer, base_currency: &Currency, all_invoices: &[Invoice], month: u32) {
+fn filter_and_print_month_sum(
+    matches: &ArgMatches,
+    printer: &Printer,
+    base_currency: &Currency,
+    all_invoices: &[Invoice],
+    month: u32,
+) {
     if let Ok(filter_request) = build_month_filter_request(&matches, month) {
         let invoices = Filter::filter(&all_invoices, &filter_request);
         printer.print_month_sum(month.into(), &base_currency, &invoices);
@@ -176,20 +203,29 @@ fn filter_and_print_month_sum(matches: &ArgMatches, printer: &Printer, base_curr
 }
 
 fn build_filter_request(matches: &ArgMatches) -> Res<Request> {
-    if matches.value_of("year").is_some() {
-        Request::from_strings(
-            matches.value_of("year"),
-            matches.value_of("month"),
-            matches.value_of("day"),
-            matches.value_of("type"),
-        )
-    } else {
-        Request::from_year_and_strings(
+    let year = matches.value_of("year");
+    match year {
+        // No year argument was given => Default to the current year
+        None => Request::from_year_and_strings(
             Local::now().year(),
             matches.value_of("month"),
             matches.value_of("day"),
             matches.value_of("type"),
-        )
+        ),
+        // Year argument is "all" => Do **not** filter
+        Some(y) if y == "all" => Request::from_strings(
+            None,
+            matches.value_of("month"),
+            matches.value_of("day"),
+            matches.value_of("type"),
+        ),
+        // Parse the year argument
+        Some(_) => Request::from_strings(
+            year,
+            matches.value_of("month"),
+            matches.value_of("day"),
+            matches.value_of("type"),
+        ),
     }
 }
 
@@ -224,24 +260,34 @@ fn get_invoices<P: AsRef<Path>>(
     if invoices.is_empty() {
         return Ok(vec![]);
     }
-    let rate_map = RateProvider::fetch_rates(
+    // let rate_map = RateProvider::fetch_rates(
+    //     invoices.first().unwrap().date(),
+    //     invoices.last().unwrap().date(),
+    //     collect_currencies(&invoices, &base_currency),
+    // )?;
+    let rate_map = match RateProvider::fetch_rates(
         invoices.first().unwrap().date(),
         invoices.last().unwrap().date(),
-        collect_currencies(&invoices),
-    )?;
+        collect_currencies(&invoices, &base_currency),
+    ) {
+        Ok(r) => r,
+        Err(_) => HashMap::new(),
+    };
 
     let amount_converter = AmountConverter::new(base_currency.to_owned(), rate_map);
-    if invoices.is_empty() {
-        Ok(vec![])
-    } else {
-        Ok(invoices.into_iter().map(|i| amount_converter.invoice_with_base_amount(&i)).collect())
-    }
+    Ok(invoices
+        .into_iter()
+        .map(|i| amount_converter.invoice_with_base_amount(&i))
+        .collect())
 }
 
-fn collect_currencies(invoices: &[Invoice]) -> Vec<&str> {
+fn collect_currencies<'a, 'b>(
+    invoices: &'a [Invoice],
+    base_currency: &'b Currency,
+) -> Vec<&'a str> {
     let mut currencies: HashSet<_> = HashSet::new();
     for invoice in invoices {
-        if invoice.amount().currency().iso != "EUR" {
+        if &invoice.amount().currency() != base_currency {
             currencies.insert(invoice.amount_ref().currency_ref().iso.as_str());
         }
     }

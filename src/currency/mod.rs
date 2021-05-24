@@ -1,8 +1,9 @@
-mod currency_data;
-
 use std::fmt;
-use crate::error::Res;
+
 use crate::error::Error;
+use crate::error::Res;
+
+pub mod currency_data;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Currency {
@@ -46,6 +47,6 @@ impl Currency {
 
 impl fmt::Display for Currency {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.symbol)
+        f.write_str(&self.symbol)
     }
 }

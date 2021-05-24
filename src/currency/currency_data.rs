@@ -1,12 +1,21 @@
 use std::collections::HashMap;
+
 use crate::currency::Currency;
 
-pub fn all() -> HashMap<&'static str, Currency> {
-    let mut map = HashMap::new();
+pub type CurrencyMap = HashMap<&'static str, Currency>;
+
+lazy_static! {
+    static ref CURRENCY_MAP: CurrencyMap = {
+       let mut map = HashMap::new();
 
     map.insert("EUR", Currency::eur());
     map.insert("CHF", Currency::chf());
     map.insert("USD", Currency::usd());
 
     map
+    };
+}
+
+pub fn all() -> CurrencyMap {
+    CURRENCY_MAP.clone()
 }

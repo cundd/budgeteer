@@ -55,6 +55,7 @@ dependencies = [
  "chrono",
  "clap",
  "dialoguer",
+ "lazy_static",
  "reqwest",
  "serde",
  "serde_derive",

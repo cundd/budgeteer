@@ -1,9 +1,9 @@
-//mod exchange_rates;
-use crate::invoice::amount::Amount;
 use std::collections::HashMap;
-use crate::rate_provider::Rate;
-use crate::invoice::Invoice;
+
 use crate::currency::Currency;
+use crate::invoice::amount::Amount;
+use crate::invoice::Invoice;
+use crate::rate_provider::Rate;
 
 pub struct AmountConverter {
     base_currency: Currency,
@@ -19,15 +19,21 @@ impl AmountConverter {
     }
 
     pub fn invoice_with_base_amount(&self, invoice: &Invoice) -> Invoice {
-        invoice.with_base_amount(self.convert_to_base(invoice, &invoice.amount()))
+        let base_amount = self.convert_to_base(invoice, &invoice.amount());
+        match base_amount {
+            Some(a) => invoice.with_base_amount(a),
+            None => invoice.clone(),
+        }
     }
 
-    pub fn convert(&self, invoice: &Invoice, amount: &Amount, to: &Currency) -> Amount {
+    fn convert(&self, invoice: &Invoice, amount: &Amount, to: &Currency) -> Option<Amount> {
         if &amount.currency() == to {
-            return Amount::new(amount.value(), to);
+            return Some(Amount::new(amount.value(), to));
         }
-        let rate = self.rate_map.get(&invoice.date().format("%Y-%m-%d").to_string())
-            .expect(&format!("Currency '{}' not found in map", amount.currency()))
+        let rate = self
+            .rate_map
+            .get(&invoice.date().format("%Y-%m-%d").to_string())?
+            // .expect(&format!("Currency '{}' not found in map", amount.currency()))
             .rate;
         let factor = if amount.currency() == self.base_currency {
             rate
@@ -35,9 +41,10 @@ impl AmountConverter {
             1.0 / rate
         };
 
-        Amount::new(amount.value() * factor, to)
+        Some(Amount::new(amount.value() * factor, to))
     }
-    pub fn convert_to_base(&self, invoice: &Invoice, amount: &Amount) -> Amount {
+
+    fn convert_to_base(&self, invoice: &Invoice, amount: &Amount) -> Option<Amount> {
         self.convert(invoice, amount, &self.base_currency)
     }
 }

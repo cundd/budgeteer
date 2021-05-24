@@ -1,13 +1,15 @@
-use crate::error::Error;
-use crate::invoice::Invoice;
-use crate::currency::Currency;
-use crate::filter::Request;
-use crate::calculator::Calculator;
-use crate::invoice::invoice_type::InvoiceType;
-use crate::month::Month;
-use ansi_term::Colour::RGB;
-use ansi_term::{Style, Colour};
 use std::env;
+
+use ansi_term::Colour::RGB;
+use ansi_term::{Colour, Style};
+
+use crate::calculator::Calculator;
+use crate::currency::{currency_data, Currency};
+use crate::error::Error;
+use crate::filter::Request;
+use crate::invoice::invoice_type::InvoiceType;
+use crate::invoice::{contains_invoice_in_currency, Invoice};
+use crate::month::Month;
 
 pub trait PrinterTrait {
     fn print_errors(&self, errors: Vec<Error>) {
@@ -41,32 +43,70 @@ impl Printer {
     }
 
     fn print_type_sum(&self, base_currency: &Currency, invoices: &[Invoice]) {
+        // Skip currencies without any Invoice
+        let currencies_to_output: Vec<Currency> = currency_data::all()
+            .into_iter()
+            .filter_map(|(_, currency)| {
+                if contains_invoice_in_currency(invoices, &currency) {
+                    Some(currency)
+                } else {
+                    None
+                }
+            })
+            .collect();
+        self.print_type_sum_header(&currencies_to_output);
+
         for invoice_type in InvoiceType::all().iter() {
             let invoice_type = *invoice_type;
             let sum = Calculator::sum_for_type(invoices, invoice_type);
 
-            println!(
-                "{}{}",
-                style_for_type(
+            print_styled_for_type(
+                invoice_type,
+                &format!(
+                    "{:width$}: {:<4} {: >8.2}  ",
+                    format!("{}", invoice_type),
+                    base_currency.symbol,
+                    sum,
+                    width = 22
+                ),
+                false,
+                true,
+            );
+
+            for currency in &currencies_to_output {
+                let sum = Calculator::sum_for_type_and_currency(invoices, invoice_type, currency);
+                print_styled_for_type(
                     invoice_type,
-                    &format!(
-                        "{:width$}: {} {: >8.2}  ",
-                        format!("{}", invoice_type),
-                        base_currency,
-                        sum,
-                        width = 22
-                    ),
+                    &format!(" | {:<4} {: >8.2}", currency.symbol, sum, ),
                     false,
                     true,
-                ),
-                style_for_type(
-                    invoice_type,
-                    &invoice_type.identifier().to_string(),
-                    true,
-                    true,
-                ),
+                );
+            }
+
+            print_styled_for_type(
+                invoice_type,
+                &invoice_type.identifier().to_string(),
+                true,
+                true,
             );
+            println!()
         }
+    }
+
+    fn print_type_sum_header(&self, currencies_to_output: &[Currency]) {
+        print_styled_header(format!(
+            "{:width$}: {}",
+            "Typ",
+            "∑ Basis Währung",
+            width = 22
+        ));
+
+        for currency in currencies_to_output {
+            print_styled_header(format!(" | ∑ {:<4}       ", currency.symbol));
+        }
+
+        print_styled_header(" ");
+        println!()
     }
 
     fn print_grand_total(&self, base_currency: &Currency, invoices: &[Invoice]) {
@@ -80,22 +120,17 @@ impl PrinterTrait for Printer {
             Error::LineComment => {}
             Error::LineEmpty => {}
             Error::LineSeparator => {}
-            _ => eprintln!("Invoice error {}", error)
+            _ => eprintln!("Invoice error {}", error),
         }
     }
 
-    #[allow(dead_code)]
     fn print_invoice(&self, base_currency: &Currency, invoice: &Invoice) {
         let note = get_prepared_note(invoice);
 
         let amount_string = if &invoice.amount().currency() != base_currency {
-            match invoice.clone().base_amount() {
-                Some(converted_amount) => format!(
-                    "{} ({})",
-                    invoice.amount(),
-                    converted_amount
-                ),
-                None => format!("{}", invoice.amount())
+            match invoice.base_amount() {
+                Some(converted_amount) => format!("{} ({})", invoice.amount(), converted_amount),
+                None => format!("{}", invoice.amount()),
             }
         } else {
             format!("{}", invoice.amount())
@@ -124,10 +159,7 @@ Datum       : {}
 Betrag      : {}
 Typ         : {}
 Notiz       : {}"#,
-                date,
-                amount_string,
-                invoice_type,
-                note,
+                date, amount_string, invoice_type, note,
             );
         }
     }
@@ -172,19 +204,23 @@ Notiz       : {}"#,
     }
 }
 
-fn style_for_type(invoice_type: InvoiceType, text: &str, fg: bool, bg: bool) -> String {
+fn style_for_type<T: AsRef<str>>(invoice_type: InvoiceType, text: T, fg: bool, bg: bool) -> String {
     if !has_true_color_support() {
-        return text.to_owned();
+        return text.as_ref().to_owned();
     }
-    let prepared_multi_line = text.lines().map(
-        |l| {
+
+    let prepared_multi_line = text
+        .as_ref()
+        .lines()
+        .map(|l| {
             if !l.is_empty() {
                 format!(" {} ", l)
             } else {
                 "".to_owned()
             }
-        }
-    ).collect::<Vec<String>>().join("\n");
+        })
+        .collect::<Vec<String>>()
+        .join("\n");
 
     if !fg && !bg {
         return prepared_multi_line;
@@ -201,6 +237,39 @@ fn style_for_type(invoice_type: InvoiceType, text: &str, fg: bool, bg: bool) -> 
     };
 
     style.paint(prepared_multi_line).to_string()
+}
+
+fn print_styled_for_type<T: AsRef<str>>(invoice_type: InvoiceType, text: T, fg: bool, bg: bool) {
+    print!("{}", style_for_type(invoice_type, text, fg, bg))
+}
+
+fn style_header<T: AsRef<str>>(text: T) -> String {
+    if !has_true_color_support() {
+        return text.as_ref().to_owned();
+    }
+
+    let prepared_multi_line = text
+        .as_ref()
+        .lines()
+        .map(|l| {
+            if !l.is_empty() {
+                format!(" {} ", l)
+            } else {
+                "".to_owned()
+            }
+        })
+        .collect::<Vec<String>>()
+        .join("\n");
+
+    Style::new()
+        .fg(Colour::White)
+        .on(Colour::Black)
+        .paint(prepared_multi_line)
+        .to_string()
+}
+
+fn print_styled_header<T: AsRef<str>>(text: T) {
+    print!("{}", style_header(text))
 }
 
 fn color_for_type(invoice_type: InvoiceType, light: bool) -> Colour {
