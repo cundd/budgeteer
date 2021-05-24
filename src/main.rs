@@ -37,6 +37,11 @@ mod verbosity;
 mod wizard;
 
 fn main() {
+    let verbosity_arg = Arg::with_name("v")
+        .short("v")
+        .multiple(true)
+        .help("Level of verbosity");
+
     let matches = App::new("Budgeteer")
         .version(env!("CARGO_PKG_VERSION"))
         .author("Daniel Corn <info@corn.rest>")
@@ -52,11 +57,6 @@ fn main() {
                         .required(true)
                         .index(1),
                 )
-                //        .arg(Arg::with_name("rate")
-                //            .long("rate")
-                //            .short("r")
-                //            .takes_value(true)
-                //            .help("Currency change rate (CHF per €)"))
                 .arg(
                     Arg::with_name("year")
                         .long("year")
@@ -85,12 +85,7 @@ fn main() {
                         .takes_value(true)
                         .help("Filter by day"),
                 )
-                .arg(
-                    Arg::with_name("v")
-                        .short("v")
-                        .multiple(true)
-                        .help("Level of verbosity"),
-                ),
+                .arg(verbosity_arg.clone()),
         )
         .subcommand(
             SubCommand::with_name("wizard")
@@ -102,11 +97,7 @@ fn main() {
                         .required(true)
                         .index(1),
                 )
-                .arg(
-                    Arg::with_name("debug")
-                        .short("d")
-                        .help("print debug information verbosely"),
-                ),
+                .arg(verbosity_arg.clone()),
         )
         .subcommand(SubCommand::with_name("show-types").about("Display the available types"))
         .get_matches();
@@ -119,6 +110,7 @@ fn main() {
 fn execute(root_matches: ArgMatches) -> Res<()> {
     if root_matches.subcommand_matches("show-types").is_some() {
         show_types();
+
         return Ok(());
     }
 
@@ -129,8 +121,10 @@ fn execute(root_matches: ArgMatches) -> Res<()> {
         let output_file = normalize_file_path(matches.value_of("output").unwrap())?;
         FileWriter::check_output_path(&output_file)?;
         if output_file.exists() {
+            let verbosity = Verbosity::from_int(matches.occurrences_of("v"));
             println!("The output file contains these invoices:");
-            let _ = load_and_display_invoices(&printer, &base_currency, &output_file, None);
+            let _ =
+                load_and_display_invoices(&printer, &base_currency, &output_file, None, verbosity);
         }
 
         let wiz = Wizard::new();
@@ -139,9 +133,6 @@ fn execute(root_matches: ArgMatches) -> Res<()> {
     }
     if let Some(matches) = root_matches.subcommand_matches("analyze") {
         let input_file = normalize_file_path(matches.value_of("input").unwrap())?;
-
-        //    let rate_string = matches.value_of("rate").unwrap();
-        //    let rate = get_rate(rate_string)?;
         let filter_request = build_filter_request(&matches)?;
         let verbosity = Verbosity::from_int(matches.occurrences_of("v"));
 
@@ -149,10 +140,15 @@ fn execute(root_matches: ArgMatches) -> Res<()> {
             printer.print_filter_request(&filter_request);
         }
 
-        let invoices_to_print =
-            load_and_display_invoices(&printer, &base_currency, input_file, Some(&filter_request))?;
+        let invoices_to_print = load_and_display_invoices(
+            &printer,
+            &base_currency,
+            input_file,
+            Some(&filter_request),
+            verbosity,
+        )?;
 
-        // Print an overview of the months, if there is NO filter for the month
+        // Print an overview of the months, if there is **no** filter for the month
         if filter_request.month().is_none() {
             for month in 1..13 {
                 filter_and_print_month_sum(
@@ -165,7 +161,12 @@ fn execute(root_matches: ArgMatches) -> Res<()> {
             }
             println!()
         }
+
         printer.print_sum(&base_currency, &invoices_to_print);
+        if filter_request.year().is_none() {
+            println!();
+            println!("⚠︎ Achtung: Die Werte der Basis Währung können nicht korrekt berechnet werden wenn mehr als 365 Tage ausgegeben werden")
+        }
     }
 
     Ok(())
@@ -176,14 +177,16 @@ fn load_and_display_invoices<P: AsRef<Path>>(
     base_currency: &Currency,
     input_file: P,
     filter_request: Option<&Request>,
+    verbosity: Verbosity,
 ) -> Res<Vec<Invoice>> {
-    let parser = InvoiceParser::new();
-    let all_invoices = get_invoices(input_file, &parser, &base_currency, Some(&printer))?;
-    let invoices_to_print = if filter_request.is_none() || filter_request.unwrap().empty() {
-        all_invoices
-    } else {
-        Filter::filter(&all_invoices, &filter_request.unwrap())
-    };
+    let invoices_to_print = get_invoices(
+        input_file,
+        filter_request,
+        &base_currency,
+        &printer,
+        verbosity,
+    )?;
+
     printer.print_invoices(&base_currency, &invoices_to_print);
 
     Ok(invoices_to_print)
@@ -233,45 +236,41 @@ fn build_month_filter_request(matches: &ArgMatches, month: u32) -> Res<Request> 
     Ok(build_filter_request(matches)?.with_month(month))
 }
 
-//fn get_rate(rate_string: &str) -> Result<f32, Error> {
-//    if rate_string.trim() == "" {
-//        return Ok(1.0);
-//    }
-//    match rate_string.trim().parse::<f32>() {
-//        Ok(r) => Ok(r),
-//        Err(_) => return Err(Error::General("Could not parse rate as number".to_owned()))
-//    }
-//}
-
 fn get_invoices<P: AsRef<Path>>(
     input_file: P,
-    parser: &InvoiceParser,
+    filter_request: Option<&Request>,
     base_currency: &Currency,
-    printer: Option<&Printer>,
+    printer: &Printer,
+    verbosity: Verbosity,
 ) -> Result<Vec<Invoice>, Error> {
     let lines = FileReader::read(input_file)?;
+    let parser = InvoiceParser::new();
     let result = parser.parse_lines(lines.lines);
-    let invoices: Vec<Invoice> = result.invoices;
+    let all_invoices = result.invoices;
+    let invoices = if filter_request.is_none() || filter_request.unwrap().empty() {
+        all_invoices
+    } else {
+        Filter::filter(&all_invoices, &filter_request.unwrap())
+    };
 
-    if let Some(printer) = printer {
-        printer.print_errors(result.errors);
-    }
+    printer.print_errors(result.errors);
 
     if invoices.is_empty() {
         return Ok(vec![]);
     }
-    // let rate_map = RateProvider::fetch_rates(
-    //     invoices.first().unwrap().date(),
-    //     invoices.last().unwrap().date(),
-    //     collect_currencies(&invoices, &base_currency),
-    // )?;
+
     let rate_map = match RateProvider::fetch_rates(
         invoices.first().unwrap().date(),
         invoices.last().unwrap().date(),
         collect_currencies(&invoices, &base_currency),
     ) {
-        Ok(r) => r,
-        Err(_) => HashMap::new(),
+        Ok(rate_map) => rate_map,
+        Err(e) => {
+            if verbosity >= Verbosity::Debug {
+                eprintln!("{}", e)
+            }
+            HashMap::new()
+        }
     };
 
     let amount_converter = AmountConverter::new(base_currency.to_owned(), rate_map);

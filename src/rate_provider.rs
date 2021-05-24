@@ -8,6 +8,7 @@ use crate::error::Res;
 
 pub struct RateProvider {}
 
+#[derive(Debug)]
 pub struct Rate {
     pub date: NaiveDate,
     pub currency: String,
@@ -76,7 +77,7 @@ impl RateProvider {
 
     fn build_request_url(start: NaiveDate, end: NaiveDate, symbols: &[&str]) -> String {
         format!(
-            "https://api.exchangeratesapi.io/history?start_at={start}&end_at={end}&symbols={symbols}",
+            "https://api.exchangerate.host/timeseries?start_date={start}&end_date={end}&symbols={symbols}",
             start = start.format(DATE_FORMAT),
             end = end.format(DATE_FORMAT),
             symbols = symbols.join(",")
