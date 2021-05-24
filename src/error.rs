@@ -2,7 +2,6 @@ use std::error;
 use std::fmt;
 use std::io;
 use std::num;
-use chrono;
 
 pub type Res<T, E = Error> = ::std::result::Result<T, E>;
 
@@ -20,14 +19,14 @@ pub enum Error {
 
 impl Error {
     fn description(&self) -> &str {
-        match self {
-            &Error::FileIO(_) => "File IO error",
-            &Error::ParseError(_) => "Parse Error",
-            &Error::General(_) => "General Error",
-            &Error::LineComment => "Line comment",
-            &Error::LineEmpty => "Line empty",
-            &Error::LineSeparator => "Line separator",
-            &Error::RateError(_) => "Rate Error",
+        match *self {
+            Error::FileIO(_) => "File IO error",
+            Error::ParseError(_) => "Parse Error",
+            Error::General(_) => "General Error",
+            Error::LineComment => "Line comment",
+            Error::LineEmpty => "Line empty",
+            Error::LineSeparator => "Line separator",
+            Error::RateError(_) => "Rate Error",
         }
     }
 
@@ -38,14 +37,14 @@ impl Error {
 
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            &Error::FileIO(ref s) => write!(f, "{}: {}", self.description(), s),
-            &Error::LineComment => write!(f, "{}", self.description()),
-            &Error::LineEmpty => write!(f, "{}", self.description()),
-            &Error::LineSeparator => write!(f, "{}", self.description()),
-            &Error::ParseError(ref s) => write!(f, "{}: {}", self.description(), s),
-            &Error::General(ref s) => write!(f, "{}: {}", self.description(), s),
-            &Error::RateError(ref s) => write!(f, "{}: {}", self.description(), s),
+        match *self {
+            Error::FileIO(ref s) => write!(f, "{}: {}", self.description(), s),
+            Error::LineComment => write!(f, "{}", self.description()),
+            Error::LineEmpty => write!(f, "{}", self.description()),
+            Error::LineSeparator => write!(f, "{}", self.description()),
+            Error::ParseError(ref s) => write!(f, "{}: {}", self.description(), s),
+            Error::General(ref s) => write!(f, "{}: {}", self.description(), s),
+            Error::RateError(ref s) => write!(f, "{}: {}", self.description(), s),
         }
     }
 }

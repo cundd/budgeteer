@@ -35,7 +35,7 @@ impl Currency {
         match all_currencies.get(input) {
             Some(c) => Ok(c.clone()),
             None => {
-                match all_currencies.iter().find(|(_, c)| &c.symbol == input) {
+                match all_currencies.iter().find(|(_, c)| c.symbol == input) {
                     Some((_, c)) => Ok(c.to_owned()),
                     None => Err(Error::ParseError(format!("Currency '{}' not found", input))),
                 }

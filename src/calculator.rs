@@ -5,18 +5,15 @@ use crate::invoice::amount::Amount;
 pub struct Calculator {}
 
 impl Calculator {
-    pub fn sum(invoices: &Vec<Invoice>) -> f64 {
+    pub fn sum(invoices: &[Invoice]) -> f64 {
         let mut sum = 0.0;
         for invoice in invoices {
-            match invoice.base_amount() {
-                Some(a) => sum += a.value(),
-                None => {}
-            }
+            if let Some(a) = invoice.base_amount() { sum += a.value() }
         }
         sum
     }
 
-    pub fn major_type(invoices: &Vec<Invoice>) -> Option<InvoiceType> {
+    pub fn major_type(invoices: &[Invoice]) -> Option<InvoiceType> {
         let r = Calculator::rate(invoices);
 
         let mut major_type: Option<InvoiceType> = None;
@@ -61,14 +58,11 @@ impl Calculator {
         major_type
     }
 
-    pub fn sum_for_type(invoices: &Vec<Invoice>, invoice_type: InvoiceType) -> f64 {
+    pub fn sum_for_type(invoices: &[Invoice], invoice_type: InvoiceType) -> f64 {
         let mut sum = 0.0;
         for invoice in invoices {
             if invoice.invoice_type() == invoice_type {
-                match invoice.base_amount() {
-                    Some(a) => sum += a.value(),
-                    None => {}
-                }
+                if let Some(a) = invoice.base_amount() { sum += a.value() }
             }
         }
         sum
@@ -82,7 +76,7 @@ impl Calculator {
         clone
     }
 
-    fn rate(invoices: &Vec<Invoice>) -> InvoiceTypeScore {
+    fn rate(invoices: &[Invoice]) -> InvoiceTypeScore {
         let mut score = InvoiceTypeScore::new();
         for invoice in invoices {
             score.add(invoice.invoice_type(), invoice.base_amount());

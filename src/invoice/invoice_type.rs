@@ -85,16 +85,16 @@ impl InvoiceType {
 
 impl fmt::Display for InvoiceType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let description = match self {
-            &InvoiceType::Car => "Car / Auto",
-            &InvoiceType::Clothes => "Clothes / Kleidung",
-            &InvoiceType::Eat => "Food / Essen",
-            &InvoiceType::Fun => "Fun / Freunde / Hobby",
-            &InvoiceType::Gas => "Gas / Tanken",
-            &InvoiceType::Health => "Health / Gesundheit",
-            &InvoiceType::Home => "Home / Hause",
-            &InvoiceType::Telecommunication => "Internet / Handy / TV",
-            &InvoiceType::Unknown => "Diverse",
+        let description = match *self {
+            InvoiceType::Car => "Car / Auto",
+            InvoiceType::Clothes => "Clothes / Kleidung",
+            InvoiceType::Eat => "Food / Essen",
+            InvoiceType::Fun => "Fun / Freunde / Hobby",
+            InvoiceType::Gas => "Gas / Tanken",
+            InvoiceType::Health => "Health / Gesundheit",
+            InvoiceType::Home => "Home / Hause",
+            InvoiceType::Telecommunication => "Internet / Handy / TV",
+            InvoiceType::Unknown => "Diverse",
         };
 
         write!(f, "{}", description)

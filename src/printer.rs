@@ -18,19 +18,19 @@ pub trait PrinterTrait {
 
     fn print_error(&self, error: &Error);
 
-    fn print_invoices(&self, base_currency: &Currency, invoices: &Vec<Invoice>) -> () {
+    fn print_invoices(&self, base_currency: &Currency, invoices: &[Invoice]) {
         for invoice in invoices {
             self.print_invoice(&base_currency, invoice)
         }
         println!()
     }
 
-    fn print_invoice(&self, base_currency: &Currency, invoice: &Invoice) -> ();
+    fn print_invoice(&self, base_currency: &Currency, invoice: &Invoice);
 
-    fn print_filter_request(&self, filter_request: &Request) -> ();
+    fn print_filter_request(&self, filter_request: &Request);
 
-    fn print_sum(&self, base_currency: &Currency, invoices: &Vec<Invoice>) -> ();
-    fn print_month_sum(&self, month: Month, base_currency: &Currency, invoices: &Vec<Invoice>) -> ();
+    fn print_sum(&self, base_currency: &Currency, invoices: &[Invoice]);
+    fn print_month_sum(&self, month: Month, base_currency: &Currency, invoices: &[Invoice]);
 }
 
 pub struct Printer {}
@@ -40,7 +40,7 @@ impl Printer {
         Printer {}
     }
 
-    fn print_type_sum(&self, base_currency: &Currency, invoices: &Vec<Invoice>) -> () {
+    fn print_type_sum(&self, base_currency: &Currency, invoices: &[Invoice]) {
         for invoice_type in InvoiceType::all().iter() {
             let invoice_type = *invoice_type;
             let sum = Calculator::sum_for_type(invoices, invoice_type);
@@ -69,7 +69,7 @@ impl Printer {
         }
     }
 
-    fn print_grand_total(&self, base_currency: &Currency, invoices: &Vec<Invoice>) -> () {
+    fn print_grand_total(&self, base_currency: &Currency, invoices: &[Invoice]) {
         println!("TOTAL: {} {:.2}", base_currency, Calculator::sum(invoices));
     }
 }
@@ -85,7 +85,7 @@ impl PrinterTrait for Printer {
     }
 
     #[allow(dead_code)]
-    fn print_invoice(&self, base_currency: &Currency, invoice: &Invoice) -> () {
+    fn print_invoice(&self, base_currency: &Currency, invoice: &Invoice) {
         let note = get_prepared_note(invoice);
 
         let amount_string = if &invoice.amount().currency() != base_currency {
@@ -132,7 +132,7 @@ Notiz       : {}"#,
         }
     }
 
-    fn print_filter_request(&self, filter_request: &Request) -> () {
+    fn print_filter_request(&self, filter_request: &Request) {
         println!("Filter:");
         if filter_request.empty() {
             println!("Keine");
@@ -142,14 +142,14 @@ Notiz       : {}"#,
         println!();
     }
 
-    fn print_sum(&self, base_currency: &Currency, invoices: &Vec<Invoice>) -> () {
+    fn print_sum(&self, base_currency: &Currency, invoices: &[Invoice]) {
         self.print_type_sum(base_currency, invoices);
         println!("-----------------------------------------");
         self.print_grand_total(base_currency, invoices);
     }
 
-    fn print_month_sum(&self, month: Month, base_currency: &Currency, invoices: &Vec<Invoice>) -> () {
-        if invoices.len() > 0 {
+    fn print_month_sum(&self, month: Month, base_currency: &Currency, invoices: &[Invoice]) {
+        if !invoices.is_empty() {
             let max_type = Calculator::major_type(invoices).unwrap();
 
             println!(
@@ -178,7 +178,7 @@ fn style_for_type(invoice_type: InvoiceType, text: &str, fg: bool, bg: bool) -> 
     }
     let prepared_multi_line = text.lines().map(
         |l| {
-            if l.len() > 0 {
+            if !l.is_empty() {
                 format!(" {} ", l)
             } else {
                 "".to_owned()
@@ -243,7 +243,7 @@ fn get_prepared_note(invoice: &Invoice) -> String {
         let mut buffer: Vec<String> = vec![];
 
         for l in note.split("<br />") {
-            if buffer.len() == 0 {
+            if buffer.is_empty() {
                 buffer.push(l.to_owned())
             } else {
                 buffer.push(format!("              {}", l))

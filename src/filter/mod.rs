@@ -8,11 +8,11 @@ use chrono::Datelike;
 pub struct Filter {}
 
 impl Filter {
-    pub fn filter(invoices: &Vec<Invoice>, request: &Request) -> Vec<Invoice> {
+    pub fn filter(invoices: &[Invoice], request: &Request) -> Vec<Invoice> {
         invoices.iter()
-            .filter(|invoice| Filter::matches_filter(invoice, request))
-            .map(Clone::clone)
-            .collect()
+                .filter(|invoice| Filter::matches_filter(invoice, request))
+                .map(Clone::clone)
+                .collect()
     }
 
     fn matches_filter(invoice: &Invoice, request: &Request) -> bool {

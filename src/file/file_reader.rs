@@ -46,11 +46,11 @@ impl FileReader {
         match line {
             Ok(ref l) => {
                 let trimmed = l.trim().trim_matches('|').to_string();
-                if trimmed.starts_with(">") || trimmed.starts_with("<!--") {
+                if trimmed.starts_with('>') || trimmed.starts_with("<!--") {
                     Err(Error::LineComment)
                 } else if trimmed.starts_with("--") {
                     Err(Error::LineSeparator)
-                } else if trimmed == "" {
+                } else if trimmed.is_empty() {
                     Err(Error::LineEmpty)
                 } else {
                     FileReader::check_line_parts(trimmed)

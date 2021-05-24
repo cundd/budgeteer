@@ -89,15 +89,13 @@ fn main() {
             .about("Display the available types"))
         .get_matches();
 
-    match execute(matches) {
-        Err(e) => eprintln!("{}", e),
-        Ok(_) => {}
-    }
+    if let Err(e) = execute(matches) { eprintln!("{}", e) }
 }
 
 fn execute(root_matches: ArgMatches) -> Res<()> {
-    if let Some(_) = root_matches.subcommand_matches("show-types") {
-        return show_types();
+    if root_matches.subcommand_matches("show-types").is_some() {
+        show_types();
+        return Ok(())
     }
 
     let printer = Printer::new();
@@ -170,7 +168,7 @@ fn load_and_display_invoices<P: AsRef<Path>>(
     Ok(invoices_to_print)
 }
 
-fn filter_and_print_month_sum(matches: &ArgMatches, printer: &Printer, base_currency: &Currency, all_invoices: &Vec<Invoice>, month: u32) {
+fn filter_and_print_month_sum(matches: &ArgMatches, printer: &Printer, base_currency: &Currency, all_invoices: &[Invoice], month: u32) {
     if let Ok(filter_request) = build_month_filter_request(&matches, month) {
         let invoices = Filter::filter(&all_invoices, &filter_request);
         printer.print_month_sum(month.into(), &base_currency, &invoices);
@@ -223,7 +221,7 @@ fn get_invoices<P: AsRef<Path>>(
         printer.print_errors(result.errors);
     }
 
-    if invoices.len() == 0 {
+    if invoices.is_empty() {
         return Ok(vec![]);
     }
     let rate_map = RateProvider::fetch_rates(
@@ -233,14 +231,14 @@ fn get_invoices<P: AsRef<Path>>(
     )?;
 
     let amount_converter = AmountConverter::new(base_currency.to_owned(), rate_map);
-    if invoices.len() == 0 {
+    if invoices.is_empty() {
         Ok(vec![])
     } else {
         Ok(invoices.into_iter().map(|i| amount_converter.invoice_with_base_amount(&i)).collect())
     }
 }
 
-fn collect_currencies(invoices: &Vec<Invoice>) -> Vec<&str> {
+fn collect_currencies(invoices: &[Invoice]) -> Vec<&str> {
     let mut currencies: HashSet<_> = HashSet::new();
     for invoice in invoices {
         if invoice.amount().currency().iso != "EUR" {
@@ -251,10 +249,9 @@ fn collect_currencies(invoices: &Vec<Invoice>) -> Vec<&str> {
     currencies.into_iter().collect()
 }
 
-fn show_types() -> Res<()> {
+fn show_types() {
     println!("Available types:");
     for invoice_type in &InvoiceType::all_known() {
         println!("- {}: {}", invoice_type.identifier(), invoice_type);
     }
-    Ok(())
 }

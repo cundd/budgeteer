@@ -71,7 +71,7 @@ impl InvoiceParser {
         Ok(Invoice::new(date, amount, base_amount, invoice_type, note))
     }
 
-    fn parse_date(&self, string_vec: &Vec<String>) -> Result<NaiveDate, Error> {
+    fn parse_date(&self, string_vec: &[String]) -> Result<NaiveDate, Error> {
         match self.get_vec_part_or_error(&string_vec, 0, "Could not read date from line") {
             Ok(s) => match NaiveDate::parse_from_str(&s, "%d.%m.%Y") {
                 Ok(d) => Ok(d),
@@ -85,7 +85,7 @@ impl InvoiceParser {
         }
     }
 
-    fn parse_amount(&self, string_vec: &Vec<String>) -> Result<f64, Error> {
+    fn parse_amount(&self, string_vec: &[String]) -> Result<f64, Error> {
         let amount_string = self.get_vec_part_or_error(
             &string_vec,
             2,
@@ -101,14 +101,14 @@ impl InvoiceParser {
         }
     }
 
-    fn get_vec_part(&self, string_vec: &Vec<String>, index: usize) -> Option<String> {
+    fn get_vec_part(&self, string_vec: &[String], index: usize) -> Option<String> {
         match string_vec.get(index) {
             Some(s) => Some(s.to_owned()),
             None => None,
         }
     }
 
-    fn get_vec_part_or_error(&self, string_vec: &Vec<String>, index: usize, msg: &str) -> Result<String, Error> {
+    fn get_vec_part_or_error(&self, string_vec: &[String], index: usize, msg: &str) -> Result<String, Error> {
         match string_vec.get(index) {
             Some(s) => Ok(s.trim().to_owned()),
             None => Err(Error::ParseError(msg.to_owned())),

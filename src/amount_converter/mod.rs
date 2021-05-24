@@ -35,7 +35,7 @@ impl AmountConverter {
             1.0 / rate
         };
 
-        return Amount::new(amount.value() * factor, to);
+        Amount::new(amount.value() * factor, to)
     }
     pub fn convert_to_base(&self, invoice: &Invoice, amount: &Amount) -> Amount {
         self.convert(invoice, amount, &self.base_currency)

@@ -53,7 +53,7 @@ impl RateProvider {
         Ok(result_map)
     }
 
-    fn build_rate(symbols: &Vec<&str>, raw_date: &str, raw_rate: &Value) -> Vec<Rate> {
+    fn build_rate(symbols: &[&str], raw_date: &str, raw_rate: &Value) -> Vec<Rate> {
         let date = match NaiveDate::parse_from_str(&raw_date, DATE_FORMAT) {
             Ok(d) => d,
             Err(e) => {
@@ -64,16 +64,13 @@ impl RateProvider {
 
         let mut rates = vec![];
         for currency_symbol in symbols.iter() {
-            match raw_rate.get(currency_symbol) {
-                Some(r) => rates.push(Rate::new(date, currency_symbol, r.as_f64().unwrap())),
-                None => {}
-            }
+            if let Some(r) = raw_rate.get(currency_symbol) { rates.push(Rate::new(date, currency_symbol, r.as_f64().unwrap())) }
         }
 
         rates
     }
 
-    fn build_request_url(start: NaiveDate, end: NaiveDate, symbols: &Vec<&str>) -> String {
+    fn build_request_url(start: NaiveDate, end: NaiveDate, symbols: &[&str]) -> String {
         format!(
             "https://api.exchangeratesapi.io/history?start_at={start}&end_at={end}&symbols={symbols}",
             start = start.format(DATE_FORMAT),
