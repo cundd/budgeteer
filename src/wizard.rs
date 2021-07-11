@@ -1,15 +1,17 @@
-use dialoguer::{Input, Select, Confirm};
-use crate::error::Res;
-use chrono::{NaiveDate, Local, Datelike};
+use std::path::Path;
+
+use chrono::{Datelike, Local, NaiveDate};
+use dialoguer::console::{Style, Term};
+use dialoguer::theme::{ColorfulTheme, Theme};
+use dialoguer::{Confirm, Input, Select};
+
 use crate::currency::Currency;
+use crate::error::Res;
+use crate::file::FileWriter;
+use crate::invoice::amount::Amount;
 use crate::invoice::invoice_type::InvoiceType;
 use crate::invoice::Invoice;
-use crate::invoice::amount::Amount;
-use dialoguer::theme::{ColorfulTheme, Theme};
 use crate::printer::{Printer, PrinterTrait};
-use crate::file::FileWriter;
-use std::path::Path;
-use dialoguer::console::{Term, Style};
 
 pub struct Wizard {
     theme: Box<dyn Theme>,
@@ -28,7 +30,12 @@ impl Wizard {
         }
     }
 
-    pub fn run<P: AsRef<Path>>(&self, printer: &Printer, base_currency: &Currency, output_file: P) -> Res<()> {
+    pub fn run<P: AsRef<Path>>(
+        &self,
+        printer: &Printer,
+        base_currency: &Currency,
+        output_file: P,
+    ) -> Res<()> {
         println!("Welcome to the invoice wizard");
 
         println!("Answer the following questions to insert a new invoice");
@@ -37,7 +44,12 @@ impl Wizard {
         self.run_inner(printer, base_currency, output_file)
     }
 
-    fn run_inner<P: AsRef<Path>>(&self, printer: &Printer, base_currency: &Currency, output_file: P) -> Res<()> {
+    fn run_inner<P: AsRef<Path>>(
+        &self,
+        printer: &Printer,
+        base_currency: &Currency,
+        output_file: P,
+    ) -> Res<()> {
         let invoice = self.create_invoice()?;
 
         println!();
@@ -49,7 +61,10 @@ impl Wizard {
             FileWriter::write_invoice(&output_file, &invoice)?;
             println!("Saved the new invoice");
 
-            if confirm.with_prompt("Do you want to insert another invoice?").interact()? {
+            if confirm
+                .with_prompt("Do you want to insert another invoice?")
+                .interact()?
+            {
                 self.run_inner(printer, base_currency, output_file)
             } else {
                 Ok(())
@@ -94,7 +109,7 @@ impl Wizard {
                 }
                 Ok(d)
             }
-            Err(_) => self.read_date()
+            Err(_) => self.read_date(),
         }
     }
 
@@ -157,17 +172,25 @@ impl Wizard {
     }
 
     #[allow(dead_code)]
-    fn prompt<'a, S>(&self, prompt: S) -> Res<()> where S: Into<&'a str> {
+    fn prompt<'a, S>(&self, prompt: S) -> Res<()>
+    where
+        S: Into<&'a str>,
+    {
         let style = Style::new().yellow();
 
-        Ok(self.term.write_str(&format!("{}", style.apply_to(prompt.into())))?)
+        Ok(self
+            .term
+            .write_str(&format!("{}", style.apply_to(prompt.into())))?)
     }
 }
 
 fn prepare_raw_date<S: Into<String>>(raw_date: S) -> String {
     let raw_date_string = raw_date.into();
     {
-        let parts: Vec<&str> = raw_date_string.split('.').filter(|p| !p.trim().is_empty()).collect();
+        let parts: Vec<&str> = raw_date_string
+            .split('.')
+            .filter(|p| !p.trim().is_empty())
+            .collect();
         let len = parts.len();
         let now = Local::now();
         if len == 2 {
