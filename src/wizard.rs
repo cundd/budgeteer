@@ -44,11 +44,12 @@ impl Wizard {
         println!("Read the following invoice:");
         printer.print_invoice(&base_currency, &invoice);
 
-        if Confirm::with_theme(self.theme.as_ref()).with_prompt("Save this invoice?").interact()? {
+        let mut confirm = Confirm::with_theme(self.theme.as_ref());
+        if confirm.with_prompt("Save this invoice?").interact()? {
             FileWriter::write_invoice(&output_file, &invoice)?;
             println!("Saved the new invoice");
 
-            if Confirm::new().with_prompt("Do you want to insert another invoice?").interact()? {
+            if confirm.with_prompt("Do you want to insert another invoice?").interact()? {
                 self.run_inner(printer, base_currency, output_file)
             } else {
                 Ok(())
