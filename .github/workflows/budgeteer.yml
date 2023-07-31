@@ -1,4 +1,4 @@
-name: chordr
+name: budgeteer
 
 on:
   push:
