@@ -59,25 +59,94 @@ fn prepare_raw_date<S: Into<String>>(raw_date: S) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use chrono::Months;
 
     #[test]
     fn test_prepare_raw_date() {
-        let now_m_y = Local::now().format("%m.%Y").to_string();
-        assert_eq!(prepare_raw_date("23"), format!("23.{}", now_m_y));
-        assert_eq!(prepare_raw_date("3"), format!("3.{}", now_m_y));
-        assert_eq!(prepare_raw_date("03"), format!("03.{}", now_m_y));
+        let now = Local::now();
+        let last_year = now.checked_sub_months(Months::new(12)).unwrap();
+        let now_m_y = now.format("%m.%Y").to_string();
+        let last_year_m_y = last_year.format("%m.%Y").to_string();
 
-        assert_eq!(prepare_raw_date("23."), format!("23.{}", now_m_y));
-        assert_eq!(prepare_raw_date("3."), format!("3.{}", now_m_y));
-        assert_eq!(prepare_raw_date("03."), format!("03.{}", now_m_y));
+        fn test_date(input: &str, date_a: String, date_b: String) {
+            let prepared_date = prepare_raw_date(input);
+            assert!(
+                prepared_date == date_a || prepared_date == date_b,
+                "Test {}: Prepared date {} matches neither {} nor {}",
+                input,
+                prepared_date,
+                date_a,
+                date_b
+            );
+        }
+        // With trailing dot (`.`)
+        test_date(
+            "23.",
+            format!("23.{}", now_m_y),
+            format!("23.{}", last_year_m_y),
+        );
+        test_date(
+            "3.",
+            format!("3.{}", now_m_y),
+            format!("3.{}", last_year_m_y),
+        );
+        test_date(
+            "03.",
+            format!("3.{}", now_m_y),
+            format!("3.{}", last_year_m_y),
+        );
 
-        let now_y = Local::now().format("%Y").to_string();
-        assert_eq!(prepare_raw_date("23.11."), format!("23.11.{}", now_y));
-        assert_eq!(prepare_raw_date("3.2."), format!("3.2.{}", now_y));
-        assert_eq!(prepare_raw_date("03.04."), format!("03.04.{}", now_y));
+        // Without trailing dot (`.`)
+        test_date(
+            "23",
+            format!("23.{}", now_m_y),
+            format!("23.{}", last_year_m_y),
+        );
+        test_date(
+            "3",
+            format!("3.{}", now_m_y),
+            format!("3.{}", last_year_m_y),
+        );
+        test_date(
+            "03",
+            format!("3.{}", now_m_y),
+            format!("3.{}", last_year_m_y),
+        );
 
-        assert_eq!(prepare_raw_date("23.11"), format!("23.11.{}", now_y));
-        assert_eq!(prepare_raw_date("3.2"), format!("3.2.{}", now_y));
-        assert_eq!(prepare_raw_date("03.04"), format!("03.04.{}", now_y));
+        let now_y = now.format("%Y").to_string();
+        let last_year_y = last_year.format("%Y").to_string();
+        // With trailing dot (`.`)
+        test_date(
+            "23.11.",
+            format!("23.11.{}", now_y),
+            format!("23.11.{}", last_year_y),
+        );
+        test_date(
+            "3.2.",
+            format!("3.2.{}", now_y),
+            format!("3.2.{}", last_year_y),
+        );
+        test_date(
+            "03.04.",
+            format!("3.4.{}", now_y),
+            format!("3.4.{}", last_year_y),
+        );
+
+        // Without trailing dot (`.`)
+        test_date(
+            "23.11",
+            format!("23.11.{}", now_y),
+            format!("23.11.{}", last_year_y),
+        );
+        test_date(
+            "3.2",
+            format!("3.2.{}", now_y),
+            format!("3.2.{}", last_year_y),
+        );
+        test_date(
+            "03.04",
+            format!("3.4.{}", now_y),
+            format!("3.4.{}", last_year_y),
+        );
     }
 }
