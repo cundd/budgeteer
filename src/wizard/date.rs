@@ -7,7 +7,7 @@ pub fn read_date(theme: &dyn Theme) -> Res<NaiveDate> {
     let raw_date = Input::<String>::with_theme(theme)
         .with_prompt("Date (dd.mm.yyyy)")
         .default(Local::now().format("%d.%m.%Y").to_string())
-        .interact()?;
+        .interact_text()?;
 
     let prepared_raw_date = prepare_raw_date(raw_date);
 

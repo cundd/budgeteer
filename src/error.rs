@@ -91,6 +91,12 @@ impl From<serde_json::Error> for Error {
     }
 }
 
+impl From<dialoguer::Error> for Error {
+    fn from(e: dialoguer::Error) -> Self {
+        Error::General(format!("Input wizard error: {}", &e))
+    }
+}
+
 impl<'a> From<&'a io::Error> for Error {
     fn from(error: &io::Error) -> Self {
         Error::FileIO(format!("{}", error))

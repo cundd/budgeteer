@@ -1,20 +1,26 @@
+mod amount;
+mod currency;
 mod date;
+mod invoice_type;
+mod note;
 use std::path::Path;
 
-use chrono::NaiveDate;
 use dialoguer::console::{Style, Term};
 use dialoguer::theme::{ColorfulTheme, Theme};
-use dialoguer::{Confirm, Input, Select};
+use dialoguer::Confirm;
 
 use crate::currency::Currency;
 use crate::error::Res;
 use crate::file::FileWriter;
 use crate::invoice::amount::Amount;
-use crate::invoice::invoice_type::InvoiceType;
 use crate::invoice::Invoice;
 use crate::printer::{Printer, PrinterTrait};
 
+use self::amount::read_amount;
+use self::currency::read_currency;
 use self::date::read_date;
+use self::invoice_type::read_invoice_type;
+use self::note::read_note;
 
 pub struct Wizard {
     theme: Box<dyn Theme>,
@@ -59,8 +65,12 @@ impl Wizard {
         println!("Read the following invoice:");
         printer.print_invoice(&base_currency, &invoice);
 
-        let mut confirm = Confirm::with_theme(self.theme.as_ref());
-        if confirm.with_prompt("Save this invoice?").interact()? {
+        let confirm = Confirm::with_theme(self.theme.as_ref());
+        if confirm
+            .clone()
+            .with_prompt("Save this invoice?")
+            .interact()?
+        {
             FileWriter::write_invoice(&output_file, &invoice)?;
             println!("Saved the new invoice");
 
@@ -81,11 +91,13 @@ impl Wizard {
     }
 
     fn create_invoice(&self) -> Res<Invoice> {
-        let date = self.read_date()?;
-        let currency = self.read_currency()?;
-        let amount = self.read_amount()?;
-        let invoice_type = self.read_invoice_type()?;
-        let note = self.read_note()?;
+        let theme = self.theme.as_ref();
+        let date = read_date(theme)?;
+        let currency = read_currency(theme)?;
+        let amount = read_amount(theme)?;
+        let invoice_type = read_invoice_type(theme)?;
+        let note = read_note(theme)?;
+
         Ok(Invoice::new(
             date,
             Amount::new(amount, &currency),
@@ -93,79 +105,5 @@ impl Wizard {
             invoice_type,
             Some(note),
         ))
-    }
-
-    fn read_date(&self) -> Res<NaiveDate> {
-        read_date(self.theme.as_ref())
-    }
-
-    fn read_currency(&self) -> Res<Currency> {
-        // self.prompt("Currency");
-        let raw_currency = Input::<String>::with_theme(self.theme.as_ref())
-            .with_prompt("Currency")
-            .default("€".to_owned())
-            .interact()?
-            .to_uppercase();
-
-        match Currency::from_string(&raw_currency) {
-            Ok(c) => Ok(c),
-            Err(_) => {
-                println!("Please enter a valid currency");
-                self.read_currency()
-            }
-        }
-    }
-
-    fn read_amount(&self) -> Res<f64> {
-        // self.prompt("Amount");
-        let raw_amount = Input::<String>::with_theme(self.theme.as_ref())
-            .with_prompt("Amount")
-            .interact()?;
-
-        let raw_amount_normalized = if raw_amount.contains(',') {
-            raw_amount.replace(',', ".")
-        } else {
-            raw_amount
-        };
-
-        match raw_amount_normalized.parse::<f64>() {
-            Ok(c) => Ok(c),
-            Err(_) => {
-                println!("Please enter a valid amount");
-                self.read_amount()
-            }
-        }
-    }
-
-    fn read_invoice_type(&self) -> Res<InvoiceType> {
-        let all = InvoiceType::all_known();
-        // self.prompt("Type");
-        let i = Select::with_theme(&ColorfulTheme::default())
-            .with_prompt("Type")
-            .default(0)
-            .items(&all[..])
-            .interact()?;
-
-        Ok(all[i])
-    }
-
-    fn read_note(&self) -> Res<String> {
-        // self.prompt("Note");
-        Ok(Input::<String>::with_theme(self.theme.as_ref())
-            .with_prompt("Note")
-            .allow_empty(true)
-            .interact()?)
-    }
-
-    #[allow(dead_code)]
-    fn prompt<'a, S>(&self, prompt: S) -> Res<()>
-    where
-        S: Into<&'a str>,
-    {
-        let style = Style::new().yellow();
-
-        Ok(self
-            .term
-            .write_str(&format!("{}", style.apply_to(prompt.into())))?)
     }
 }
