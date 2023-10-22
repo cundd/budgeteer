@@ -5,7 +5,7 @@ mod invoice_type;
 mod note;
 use std::path::Path;
 
-use dialoguer::console::{Style, Term};
+use dialoguer::console::Style;
 use dialoguer::theme::{ColorfulTheme, Theme};
 use dialoguer::Confirm;
 
@@ -24,8 +24,6 @@ use self::note::read_note;
 
 pub struct Wizard {
     theme: Box<dyn Theme>,
-    #[allow(dead_code)]
-    term: Term,
 }
 
 impl Wizard {
@@ -35,7 +33,6 @@ impl Wizard {
 
         Wizard {
             theme: Box::new(theme),
-            term: Term::stdout(),
         }
     }
 
