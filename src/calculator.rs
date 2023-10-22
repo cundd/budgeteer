@@ -1,7 +1,7 @@
 use crate::currency::Currency;
 use crate::invoice::amount::Amount;
-use crate::invoice::Invoice;
 use crate::invoice::invoice_type::InvoiceType;
+use crate::invoice::Invoice;
 
 pub struct Calculator {}
 
@@ -9,7 +9,9 @@ impl Calculator {
     pub fn sum(invoices: &[Invoice]) -> f64 {
         let mut sum = 0.0;
         for invoice in invoices {
-            if let Some(a) = invoice.base_amount() { sum += a.value() }
+            if let Some(a) = invoice.base_amount() {
+                sum += a.value()
+            }
         }
         sum
     }
@@ -63,16 +65,23 @@ impl Calculator {
         let mut sum = 0.0;
         for invoice in invoices {
             if invoice.invoice_type() == invoice_type {
-                if let Some(a) = invoice.base_amount() { sum += a.value() }
+                if let Some(a) = invoice.base_amount() {
+                    sum += a.value()
+                }
             }
         }
         sum
     }
 
-    pub fn sum_for_type_and_currency(invoices: &[Invoice], invoice_type: InvoiceType, currency: &Currency) -> f64 {
+    pub fn sum_for_type_and_currency(
+        invoices: &[Invoice],
+        invoice_type: InvoiceType,
+        currency: &Currency,
+    ) -> f64 {
         let mut sum = 0.0;
         for invoice in invoices {
-            if invoice.invoice_type() == invoice_type && invoice.amount().currency_ref() == currency {
+            if invoice.invoice_type() == invoice_type && invoice.amount().currency_ref() == currency
+            {
                 sum += invoice.amount_ref().value()
             }
         }
@@ -126,7 +135,7 @@ impl InvoiceTypeScore {
     fn add(&mut self, invoice_type: InvoiceType, amount: Option<Amount>) {
         let amount = match amount {
             Some(a) => a.value(),
-            None => 0.0
+            None => 0.0,
         };
 
         match invoice_type {
@@ -142,4 +151,3 @@ impl InvoiceTypeScore {
         }
     }
 }
-

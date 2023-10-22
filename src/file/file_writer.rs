@@ -1,9 +1,9 @@
+use crate::error::{Error, Res};
+use crate::file::normalize_file_path;
 use crate::invoice::Invoice;
-use crate::error::{Res, Error};
 use std::fs::OpenOptions;
 use std::io::prelude::*;
 use std::path::Path;
-use crate::file::normalize_file_path;
 
 pub struct FileWriter {}
 
@@ -26,12 +26,16 @@ impl FileWriter {
     pub fn check_output_path<P: AsRef<Path>>(path_str: P) -> Res<()> {
         let path = normalize_file_path(path_str.as_ref())?;
         if path.is_dir() {
-            return Err(Error::FileIO("Output path must not be a directory".to_owned()));
+            return Err(Error::FileIO(
+                "Output path must not be a directory".to_owned(),
+            ));
         }
 
         if let Some(parent) = path.parent() {
             if !parent.exists() {
-                return Err(Error::FileIO("Output path parent directory does not exist".to_owned()));
+                return Err(Error::FileIO(
+                    "Output path parent directory does not exist".to_owned(),
+                ));
             }
         }
         Ok(())

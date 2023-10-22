@@ -77,7 +77,7 @@ impl Printer {
                 let sum = Calculator::sum_for_type_and_currency(invoices, invoice_type, currency);
                 print_styled_for_type(
                     invoice_type,
-                    &format!(" | {:<4} {: >8.2}", currency.symbol, sum, ),
+                    &format!(" | {:<4} {: >8.2}", currency.symbol, sum,),
                     false,
                     true,
                 );

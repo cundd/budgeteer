@@ -33,20 +33,26 @@ struct RawRates {
 }
 
 impl RateProvider {
-    pub fn fetch_rates(start: NaiveDate, end: NaiveDate, symbols: Vec<&str>) -> Res<HashMap<String, Rate>> {
+    pub fn fetch_rates(
+        start: NaiveDate,
+        end: NaiveDate,
+        symbols: Vec<&str>,
+    ) -> Res<HashMap<String, Rate>> {
         let request_url = RateProvider::build_request_url(start, end, &symbols);
 
         let body = reqwest::blocking::get(&request_url)?.text()?;
         let response = reqwest::blocking::get(&request_url)?;
         let raw_rates = match from_reader::<_, RawRates>(response) {
             Ok(r) => r,
-            Err(e) => return Err(Error::RateError(format!("{} for body '{}'", e, body)))
+            Err(e) => return Err(Error::RateError(format!("{} for body '{}'", e, body))),
         };
-        let rates = raw_rates.rates.iter()
-                             .flat_map(
-                                 |(raw_date, raw_rate)| RateProvider::build_rate(&symbols, &raw_date, raw_rate)
-                             )
-                             .collect::<Vec<Rate>>();
+        let rates = raw_rates
+            .rates
+            .iter()
+            .flat_map(|(raw_date, raw_rate)| {
+                RateProvider::build_rate(&symbols, &raw_date, raw_rate)
+            })
+            .collect::<Vec<Rate>>();
 
         let mut result_map = HashMap::new();
         for rate in rates {
@@ -84,4 +90,3 @@ impl RateProvider {
         )
     }
 }
-

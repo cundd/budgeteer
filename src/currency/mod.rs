@@ -35,12 +35,10 @@ impl Currency {
         let all_currencies = currency_data::all();
         match all_currencies.get(input) {
             Some(c) => Ok(c.clone()),
-            None => {
-                match all_currencies.iter().find(|(_, c)| c.symbol == input) {
-                    Some((_, c)) => Ok(c.to_owned()),
-                    None => Err(Error::ParseError(format!("Currency '{}' not found", input))),
-                }
-            }
+            None => match all_currencies.iter().find(|(_, c)| c.symbol == input) {
+                Some((_, c)) => Ok(c.to_owned()),
+                None => Err(Error::ParseError(format!("Currency '{}' not found", input))),
+            },
         }
     }
 }

@@ -1,6 +1,6 @@
-use std::fmt;
 use crate::currency::Currency;
 use std::cmp::Ordering;
+use std::fmt;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Amount {

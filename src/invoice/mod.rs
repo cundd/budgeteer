@@ -7,9 +7,9 @@ use crate::currency::Currency;
 use crate::invoice::amount::Amount;
 use crate::invoice::invoice_type::InvoiceType;
 
-pub mod invoice_type;
-pub mod invoice_parser;
 pub mod amount;
+pub mod invoice_parser;
+pub mod invoice_type;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Invoice {
@@ -21,7 +21,13 @@ pub struct Invoice {
 }
 
 impl Invoice {
-    pub fn new(date: NaiveDate, amount: Amount, base_amount: Option<Amount>, invoice_type: InvoiceType, note: Option<String>) -> Self {
+    pub fn new(
+        date: NaiveDate,
+        amount: Amount,
+        base_amount: Option<Amount>,
+        invoice_type: InvoiceType,
+        note: Option<String>,
+    ) -> Self {
         Invoice {
             date,
             amount,
@@ -30,21 +36,27 @@ impl Invoice {
             note,
         }
     }
+    
     pub fn date(&self) -> NaiveDate {
         self.date
     }
+    
     pub fn amount(&self) -> Amount {
         self.amount.clone()
     }
+    
     pub fn amount_ref(&self) -> &Amount {
         &self.amount
     }
+    
     pub fn base_amount(&self) -> Option<Amount> {
         self.base_amount.clone()
     }
+
     pub fn invoice_type(&self) -> InvoiceType {
         self.invoice_type
     }
+
     pub fn note(&self) -> Option<String> {
         self.note.clone()
     }
@@ -62,7 +74,7 @@ impl fmt::Display for Invoice {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let note = match self.note {
             Some(ref c) => c.to_owned(),
-            None => "".to_owned()
+            None => "".to_owned(),
         };
         write!(
             f,
@@ -72,10 +84,7 @@ Betrag:    {}
 Typ:       {}
 Notiz:     {}\
 ",
-            self.date,
-            self.amount,
-            self.invoice_type,
-            note
+            self.date, self.amount, self.invoice_type, note
         )
     }
 }
@@ -87,17 +96,22 @@ impl PartialOrd for Invoice {
         match a_base_amount {
             Some(a_amount) => match b_base_amount {
                 Some(b_amount) => a_amount.partial_cmp(&b_amount),
-                None => Some(Ordering::Greater)
-            }
-            None => if b_base_amount.is_some() {
-                Some(Ordering::Less)
-            } else {
-                Some(Ordering::Equal)
+                None => Some(Ordering::Greater),
+            },
+            None => {
+                if b_base_amount.is_some() {
+                    Some(Ordering::Less)
+                } else {
+                    Some(Ordering::Equal)
+                }
             }
         }
     }
 }
 
 pub fn contains_invoice_in_currency(invoices: &[Invoice], currency: &Currency) -> bool {
-    invoices.iter().find(|invoice| invoice.amount_ref().currency_ref() == currency).is_some()
+    invoices
+        .iter()
+        .find(|invoice| invoice.amount_ref().currency_ref() == currency)
+        .is_some()
 }

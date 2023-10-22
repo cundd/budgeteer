@@ -1,6 +1,6 @@
+use crate::error::Error;
 use std::fmt;
 use std::str::FromStr;
-use crate::error::Error;
 
 #[derive(Clone, PartialOrd, PartialEq, Copy, Debug)]
 pub enum InvoiceType {
@@ -35,8 +35,10 @@ impl InvoiceType {
             "T" | "GAS" | "TANKEN" => InvoiceType::Gas,
             "G" | "HEALTH" | "GESUNDHEIT" => InvoiceType::Health,
             "H" | "HOME" | "HAUS" => InvoiceType::Home,
-            "I" | "TELECOMMUNICATION" | "INTERNET" | "HANDY" | "TV" => InvoiceType::Telecommunication,
-            _ => InvoiceType::Unknown
+            "I" | "TELECOMMUNICATION" | "INTERNET" | "HANDY" | "TV" => {
+                InvoiceType::Telecommunication
+            }
+            _ => InvoiceType::Unknown,
         }
     }
 

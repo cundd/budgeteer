@@ -1,7 +1,7 @@
+use crate::error::Error;
 use std::fs::File;
 use std::io;
-use std::io::{BufReader, BufRead};
-use crate::error::Error;
+use std::io::{BufRead, BufReader};
 use std::path::Path;
 
 pub type LineParts = Vec<String>;
@@ -16,7 +16,10 @@ pub struct FileReader {}
 impl FileReader {
     pub fn read<P: AsRef<Path>>(input_file: P) -> Result<ReadFileResult, Error> {
         if !input_file.as_ref().exists() {
-            return Err(Error::FileIO(format!("File {} does not exist", input_file.as_ref().to_string_lossy())));
+            return Err(Error::FileIO(format!(
+                "File {} does not exist",
+                input_file.as_ref().to_string_lossy()
+            )));
         }
         let f = File::open(input_file)?;
         let file = BufReader::new(&f);
@@ -61,7 +64,10 @@ impl FileReader {
     }
 
     fn check_line_parts(trimmed: String) -> Result<LineParts, Error> {
-        let parts = trimmed.split('|').map(|part| part.trim().to_owned()).collect::<LineParts>();
+        let parts = trimmed
+            .split('|')
+            .map(|part| part.trim().to_owned())
+            .collect::<LineParts>();
 
         if parts.iter().any(|part| part.starts_with("--")) {
             Err(Error::LineSeparator)
@@ -78,52 +84,84 @@ mod tests {
     #[test]
     fn test_read_line() {
         assert!(FileReader::read_line(Ok("| a | b | c |".to_string())).is_ok());
-        assert_eq!(FileReader::read_line(Ok("| a | b | c |".to_string())), Ok(vec![
-            "a".to_string(),
-            "b".to_string(),
-            "c".to_string()
-        ]));
+        assert_eq!(
+            FileReader::read_line(Ok("| a | b | c |".to_string())),
+            Ok(vec!["a".to_string(), "b".to_string(), "c".to_string()])
+        );
     }
 
     #[test]
     fn test_read_line_empty() {
         assert!(FileReader::read_line(Ok("".to_string())).is_err());
-        assert_eq!(FileReader::read_line(Ok("".to_string())), Err(Error::LineEmpty));
+        assert_eq!(
+            FileReader::read_line(Ok("".to_string())),
+            Err(Error::LineEmpty)
+        );
     }
 
     #[test]
     fn test_read_line_separator() {
         assert!(FileReader::read_line(Ok("----".to_string())).is_err());
-        assert_eq!(FileReader::read_line(Ok("----".to_string())), Err(Error::LineSeparator));
+        assert_eq!(
+            FileReader::read_line(Ok("----".to_string())),
+            Err(Error::LineSeparator)
+        );
 
         assert!(FileReader::read_line(Ok("--".to_string())).is_err());
-        assert_eq!(FileReader::read_line(Ok("--".to_string())), Err(Error::LineSeparator));
+        assert_eq!(
+            FileReader::read_line(Ok("--".to_string())),
+            Err(Error::LineSeparator)
+        );
 
         assert!(FileReader::read_line(Ok("| ------ | --- |".to_string())).is_err());
-        assert_eq!(FileReader::read_line(Ok("| ------ | --- |".to_string())), Err(Error::LineSeparator));
+        assert_eq!(
+            FileReader::read_line(Ok("| ------ | --- |".to_string())),
+            Err(Error::LineSeparator)
+        );
 
         assert!(FileReader::read_line(Ok("|------|---|".to_string())).is_err());
-        assert_eq!(FileReader::read_line(Ok("|------|---|".to_string())), Err(Error::LineSeparator));
+        assert_eq!(
+            FileReader::read_line(Ok("|------|---|".to_string())),
+            Err(Error::LineSeparator)
+        );
 
         assert!(FileReader::read_line(Ok("|--|---|".to_string())).is_err());
-        assert_eq!(FileReader::read_line(Ok("|--|---|".to_string())), Err(Error::LineSeparator));
+        assert_eq!(
+            FileReader::read_line(Ok("|--|---|".to_string())),
+            Err(Error::LineSeparator)
+        );
     }
 
     #[test]
     fn test_read_line_comment() {
         assert!(FileReader::read_line(Ok("> Something".to_string())).is_err());
-        assert_eq!(FileReader::read_line(Ok("> Something".to_string())), Err(Error::LineComment));
+        assert_eq!(
+            FileReader::read_line(Ok("> Something".to_string())),
+            Err(Error::LineComment)
+        );
 
         assert!(FileReader::read_line(Ok(">".to_string())).is_err());
-        assert_eq!(FileReader::read_line(Ok(">".to_string())), Err(Error::LineComment));
+        assert_eq!(
+            FileReader::read_line(Ok(">".to_string())),
+            Err(Error::LineComment)
+        );
 
         assert!(FileReader::read_line(Ok("> ".to_string())).is_err());
-        assert_eq!(FileReader::read_line(Ok("> ".to_string())), Err(Error::LineComment));
+        assert_eq!(
+            FileReader::read_line(Ok("> ".to_string())),
+            Err(Error::LineComment)
+        );
 
         assert!(FileReader::read_line(Ok("<!-- some text".to_string())).is_err());
-        assert_eq!(FileReader::read_line(Ok("<!-- some text".to_string())), Err(Error::LineComment));
+        assert_eq!(
+            FileReader::read_line(Ok("<!-- some text".to_string())),
+            Err(Error::LineComment)
+        );
 
         assert!(FileReader::read_line(Ok("<!--".to_string())).is_err());
-        assert_eq!(FileReader::read_line(Ok("<!--".to_string())), Err(Error::LineComment));
+        assert_eq!(
+            FileReader::read_line(Ok("<!--".to_string())),
+            Err(Error::LineComment)
+        );
     }
 }

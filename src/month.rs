@@ -1,5 +1,5 @@
-use std::fmt;
 use std::convert::From;
+use std::fmt;
 
 #[allow(dead_code)]
 pub enum Month {
@@ -49,7 +49,7 @@ impl Month {
             10 => Month::October,
             11 => Month::November,
             12 => Month::December,
-            _ => panic!("Month {} out of bound", i)
+            _ => panic!("Month {} out of bound", i),
         }
     }
 }

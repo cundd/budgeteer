@@ -1,7 +1,7 @@
 use crate::error::{Error, Res};
-use std::str;
-use std::fmt;
 use crate::invoice::invoice_type::InvoiceType;
+use std::fmt;
+use std::str;
 
 #[derive(Clone)]
 pub struct Request {
@@ -61,7 +61,10 @@ impl Request {
     }
 
     pub fn empty(&self) -> bool {
-        self.year.is_none() && self.month.is_none() && self.day.is_none() && self.invoice_type.is_none()
+        self.year.is_none()
+            && self.month.is_none()
+            && self.day.is_none()
+            && self.invoice_type.is_none()
     }
 
     pub fn year(&self) -> Option<i32> {
@@ -80,14 +83,13 @@ impl Request {
         self.invoice_type
     }
 
-
     fn parse_option_i32(option: Option<&str>) -> Res<Option<i32>> {
         match option {
             Some(o) => match o.parse::<i32>() {
                 Ok(o) => Ok(Some(o)),
-                Err(e) => Err(Error::from(e))
+                Err(e) => Err(Error::from(e)),
             },
-            None => Ok(None)
+            None => Ok(None),
         }
     }
 
@@ -95,16 +97,16 @@ impl Request {
         match option {
             Some(o) => match o.parse::<u32>() {
                 Ok(o) => Ok(Some(o)),
-                Err(e) => Err(Error::from(e))
+                Err(e) => Err(Error::from(e)),
             },
-            None => Ok(None)
+            None => Ok(None),
         }
     }
 
     fn parse_invoice_type(option: Option<&str>) -> Option<InvoiceType> {
         match option {
             Some(o) => Some(InvoiceType::from_str(o)),
-            None => None
+            None => None,
         }
     }
 }
@@ -138,7 +140,6 @@ impl fmt::Display for Request {
         if has_day {
             s.push_str(&format!("Tag: {}", self.day.unwrap()));
         }
-
 
         write!(f, "{}", s)
     }

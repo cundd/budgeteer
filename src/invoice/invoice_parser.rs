@@ -1,10 +1,10 @@
-use crate::invoice::Invoice;
-use crate::error::Error;
-use chrono::NaiveDate;
-use crate::invoice::invoice_type::InvoiceType;
-use crate::invoice::amount::Amount;
-use crate::file::LineParts;
 use crate::currency::Currency;
+use crate::error::Error;
+use crate::file::LineParts;
+use crate::invoice::amount::Amount;
+use crate::invoice::invoice_type::InvoiceType;
+use crate::invoice::Invoice;
+use chrono::NaiveDate;
 use std::cmp::Ordering;
 
 pub struct ParserResult {
@@ -24,8 +24,8 @@ impl InvoiceParser {
         let mut errors = vec![];
         for parts in lines {
             match self.build_from_vec(parts.iter().map(String::as_str).collect()) {
-                Ok(invoice) => { invoices.push(invoice) }
-                Err(error) => { errors.push(error) }
+                Ok(invoice) => invoices.push(invoice),
+                Err(error) => errors.push(error),
             }
         }
         invoices.sort_by(|a, b| {
@@ -40,29 +40,17 @@ impl InvoiceParser {
             }
         });
 
-        ParserResult {
-            invoices,
-            errors,
-        }
+        ParserResult { invoices, errors }
     }
 
     pub fn build_from_vec(&self, parts: Vec<&str>) -> Result<Invoice, Error> {
-        let string_vec: Vec<String> =
-            parts.into_iter()
-                .map(String::from)
-                .collect();
+        let string_vec: Vec<String> = parts.into_iter().map(String::from).collect();
 
         let date = self.parse_date(&string_vec)?;
-        let raw_currency = self.get_vec_part_or_error(
-            &string_vec,
-            1,
-            "Could not read currency from line",
-        )?;
+        let raw_currency =
+            self.get_vec_part_or_error(&string_vec, 1, "Could not read currency from line")?;
         let currency = Currency::from_string(&raw_currency)?;
-        let amount = Amount::new(
-            self.parse_amount(&string_vec)?,
-            &currency,
-        );
+        let amount = Amount::new(self.parse_amount(&string_vec)?, &currency);
 
         let invoice_type = InvoiceType::from_str(&string_vec.get(3).unwrap_or(&"".to_string()));
         let note = self.get_vec_part(&string_vec, 4);
@@ -77,27 +65,27 @@ impl InvoiceParser {
                 Ok(d) => Ok(d),
                 Err(e) => Err(Error::ParseError(format!(
                     "Could not parse date '{}': {}",
-                    s,
-                    &e
-                )))
-            }
-            Err(e) => Err(e)
+                    s, &e
+                ))),
+            },
+            Err(e) => Err(e),
         }
     }
 
     fn parse_amount(&self, string_vec: &[String]) -> Result<f64, Error> {
-        let amount_string = self.get_vec_part_or_error(
-            &string_vec,
-            2,
-            "Could not read amount from line",
-        )?;
+        let amount_string =
+            self.get_vec_part_or_error(&string_vec, 2, "Could not read amount from line")?;
 
         match amount_string
             .trim()
             .replace(',', ".") // Replace ',' with '.'
-            .parse::<f64>() {
+            .parse::<f64>()
+        {
             Ok(f) => Ok(f),
-            Err(e) => Err(Error::ParseError(format!("Could not parse amount '{}': {}", amount_string, e)))
+            Err(e) => Err(Error::ParseError(format!(
+                "Could not parse amount '{}': {}",
+                amount_string, e
+            ))),
         }
     }
 
@@ -108,7 +96,12 @@ impl InvoiceParser {
         }
     }
 
-    fn get_vec_part_or_error(&self, string_vec: &[String], index: usize, msg: &str) -> Result<String, Error> {
+    fn get_vec_part_or_error(
+        &self,
+        string_vec: &[String],
+        index: usize,
+        msg: &str,
+    ) -> Result<String, Error> {
         match string_vec.get(index) {
             Some(s) => Ok(s.trim().to_owned()),
             None => Err(Error::ParseError(msg.to_owned())),
@@ -123,7 +116,8 @@ mod tests {
     #[test]
     fn build_from_vec() {
         let invoice_parser = InvoiceParser::new();
-        let result = invoice_parser.build_from_vec(vec!["15.02.2019", "€", "66.60", "T", "Gas station"]);
+        let result =
+            invoice_parser.build_from_vec(vec!["15.02.2019", "€", "66.60", "T", "Gas station"]);
         match result {
             Ok(i) => {
                 assert_eq!(i.invoice_type, InvoiceType::Gas);
@@ -132,7 +126,7 @@ mod tests {
                 assert!(i.note.is_some());
                 assert_eq!(i.note.unwrap(), "Gas station");
             }
-            Err(e) => panic!("{}", e)
+            Err(e) => panic!("{}", e),
         };
     }
 }

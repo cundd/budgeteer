@@ -1,12 +1,12 @@
-mod file_writer;
 mod file_reader;
+mod file_writer;
 
 pub use self::file_reader::FileReader;
 pub use self::file_reader::LineParts;
 pub use self::file_writer::FileWriter;
-use std::{fs, env};
-use std::path::{PathBuf, Path};
-use crate::error::{Res, Error};
+use crate::error::{Error, Res};
+use std::path::{Path, PathBuf};
+use std::{env, fs};
 
 pub fn normalize_file_path<P: AsRef<Path>>(path_input: P) -> Res<PathBuf> {
     let path = path_input.as_ref();
@@ -26,31 +26,29 @@ pub fn normalize_file_path<P: AsRef<Path>>(path_input: P) -> Res<PathBuf> {
                     Err(_) => Err(Error::file_io(format!(
                         "File parent directory {} not found",
                         parent.to_path_buf().to_string_lossy()
-                    )))
+                    ))),
                 }
             }
-            None => Err(Error::file_io("File path not found"))
+            None => Err(Error::file_io("File path not found")),
         }
     }
 }
 
 fn prepend_current_working_directory(path: &&Path) -> Res<PathBuf> {
     match env::current_dir() {
-        Ok(cwd) => {
-            normalize_file_path(format!(
-                "{}/{}",
-                cwd.to_string_lossy(),
-                path.to_string_lossy()
-            ))
-        }
-        Err(_) => Err(Error::file_io("File has no parent directory"))
+        Ok(cwd) => normalize_file_path(format!(
+            "{}/{}",
+            cwd.to_string_lossy(),
+            path.to_string_lossy()
+        )),
+        Err(_) => Err(Error::file_io("File has no parent directory")),
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use std::time::{SystemTime, UNIX_EPOCH};
     use super::*;
+    use std::time::{SystemTime, UNIX_EPOCH};
 
     #[test]
     fn test_normalize_path() {
@@ -67,12 +65,13 @@ mod tests {
             .duration_since(UNIX_EPOCH)
             .expect("Could not get current time")
             .subsec_nanos();
-        let path = format!("{}/new-file-that-did-not-exist-before-{}.md", env!("CARGO_MANIFEST_DIR").to_owned(), suffix);
-        assert!(normalize_file_path(&path).is_ok());
-        assert_eq!(
-            normalize_file_path(&path).unwrap().to_string_lossy(),
-            path
+        let path = format!(
+            "{}/new-file-that-did-not-exist-before-{}.md",
+            env!("CARGO_MANIFEST_DIR").to_owned(),
+            suffix
         );
+        assert!(normalize_file_path(&path).is_ok());
+        assert_eq!(normalize_file_path(&path).unwrap().to_string_lossy(), path);
     }
 
     #[test]

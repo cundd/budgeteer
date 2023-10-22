@@ -30,7 +30,10 @@ impl Error {
         }
     }
 
-    pub fn file_io<S>(error: S) -> Self where S: Into<String> {
+    pub fn file_io<S>(error: S) -> Self
+    where
+        S: Into<String>,
+    {
         Error::FileIO(error.into())
     }
 }
