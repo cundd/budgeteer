@@ -66,6 +66,7 @@ impl Wizard {
         if confirm
             .clone()
             .with_prompt("Save this invoice?")
+            .default(true)
             .interact()?
         {
             FileWriter::write_invoice(&output_file, &invoice)?;
@@ -73,6 +74,7 @@ impl Wizard {
 
             if confirm
                 .with_prompt("Do you want to insert another invoice?")
+                .default(true)
                 .interact()?
             {
                 self.run_inner(printer, base_currency, output_file)
