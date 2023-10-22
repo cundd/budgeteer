@@ -1,31 +1,34 @@
-use dialoguer::Completion;
-
+use super::WizardTrait;
 use crate::error::Res;
+use crate::invoice::Invoice;
 use dialoguer::theme::Theme;
+use dialoguer::Completion;
 use dialoguer::Input;
+use std::collections::HashSet;
 
-pub fn read_note(theme: &dyn Theme) -> Res<String> {
-    let completion = NoteCompletion::default();
+#[derive(Default)]
+pub struct NoteWizard {}
 
-    Ok(Input::<String>::with_theme(theme)
-        .with_prompt("Note")
-        .completion_with(&completion)
-        .allow_empty(true)
-        .interact_text()?)
+impl WizardTrait<String> for NoteWizard {
+    fn read(&self, theme: &dyn Theme, invoices: &[Invoice]) -> Res<String> {
+        let completion = NoteCompletion::new(invoices);
+
+        Ok(Input::<String>::with_theme(theme)
+            .with_prompt("Note")
+            .completion_with(&completion)
+            .allow_empty(true)
+            .interact_text()?)
+    }
 }
 
 struct NoteCompletion {
-    options: Vec<String>,
+    options: HashSet<String>,
 }
 
-impl Default for NoteCompletion {
-    fn default() -> Self {
-        NoteCompletion {
-            options: vec![
-                "Hover".to_string(),
-                "Migros".to_string(),
-                "Interspar".to_string(),
-            ],
+impl NoteCompletion {
+    fn new(invoices: &[Invoice]) -> Self {
+        Self {
+            options: invoices.iter().filter_map(|i| i.note()).collect(),
         }
     }
 }
@@ -37,10 +40,10 @@ impl Completion for NoteCompletion {
         let matches = self
             .options
             .iter()
-            .filter(|option| option.starts_with(&input_uppercase))
+            .filter(|option| option.to_uppercase().starts_with(&input_uppercase))
             .collect::<Vec<_>>();
 
-        if matches.len() == 1 {
+        if !matches.is_empty() {
             Some(matches[0].to_string())
         } else {
             None

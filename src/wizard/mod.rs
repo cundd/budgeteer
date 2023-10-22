@@ -20,10 +20,16 @@ use self::amount::read_amount;
 use self::currency::read_currency;
 use self::date::read_date;
 use self::invoice_type::read_invoice_type;
-use self::note::read_note;
+use self::note::NoteWizard;
+
+// Trait for "sub"-wizards
+trait WizardTrait<T> {
+    fn read(&self, theme: &dyn Theme, invoices: &[Invoice]) -> Res<T>;
+}
 
 pub struct Wizard {
     theme: Box<dyn Theme>,
+    note_wizard: NoteWizard,
 }
 
 impl Wizard {
@@ -33,6 +39,7 @@ impl Wizard {
 
         Wizard {
             theme: Box::new(theme),
+            note_wizard: NoteWizard::default(),
         }
     }
 
@@ -41,13 +48,14 @@ impl Wizard {
         printer: &Printer,
         base_currency: &Currency,
         output_file: P,
+        invoices: &[Invoice],
     ) -> Res<()> {
         println!("Welcome to the invoice wizard");
 
         println!("Answer the following questions to insert a new invoice");
         println!("(Press ctrl+c to exit)");
 
-        self.run_inner(printer, base_currency, output_file)
+        self.run_inner(printer, base_currency, output_file, invoices)
     }
 
     fn run_inner<P: AsRef<Path>>(
@@ -55,8 +63,9 @@ impl Wizard {
         printer: &Printer,
         base_currency: &Currency,
         output_file: P,
+        invoices: &[Invoice],
     ) -> Res<()> {
-        let invoice = self.create_invoice()?;
+        let invoice = self.create_invoice(invoices)?;
 
         println!();
         println!("Read the following invoice:");
@@ -77,7 +86,7 @@ impl Wizard {
                 .default(true)
                 .interact()?
             {
-                self.run_inner(printer, base_currency, output_file)
+                self.run_inner(printer, base_currency, output_file, invoices)
             } else {
                 Ok(())
             }
@@ -85,17 +94,17 @@ impl Wizard {
             println!();
             println!("Build another invoice instead");
 
-            self.run_inner(printer, base_currency, output_file)
+            self.run_inner(printer, base_currency, output_file, invoices)
         }
     }
 
-    fn create_invoice(&self) -> Res<Invoice> {
+    fn create_invoice(&self, invoices: &[Invoice]) -> Res<Invoice> {
         let theme = self.theme.as_ref();
         let date = read_date(theme)?;
         let currency = read_currency(theme)?;
         let amount = read_amount(theme)?;
         let invoice_type = read_invoice_type(theme)?;
-        let note = read_note(theme)?;
+        let note = self.note_wizard.read(theme, invoices)?;
 
         Ok(Invoice::new(
             date,

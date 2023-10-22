@@ -5,6 +5,7 @@ extern crate serde_derive;
 
 use std::collections::{HashMap, HashSet};
 use std::path::Path;
+use std::vec;
 
 use chrono::{Datelike, Local};
 use clap::{App, AppSettings, Arg, ArgMatches, SubCommand};
@@ -120,16 +121,18 @@ fn execute(root_matches: ArgMatches) -> Res<()> {
     if let Some(matches) = root_matches.subcommand_matches("wizard") {
         let output_file = normalize_file_path(matches.value_of("output").unwrap())?;
         FileWriter::check_output_path(&output_file)?;
-        if output_file.exists() {
+        let invoices_to_print = if output_file.exists() {
             let verbosity = Verbosity::from_int(matches.occurrences_of("v"));
             println!("The output file contains these invoices:");
-            let _ =
-                load_and_display_invoices(&printer, &base_currency, &output_file, None, verbosity);
-        }
+            load_and_display_invoices(&printer, &base_currency, &output_file, None, verbosity)
+                .unwrap_or_default()
+        } else {
+            vec![]
+        };
 
         let wiz = Wizard::new();
 
-        return wiz.run(&printer, &base_currency, &output_file);
+        return wiz.run(&printer, &base_currency, &output_file, &invoices_to_print);
     }
     if let Some(matches) = root_matches.subcommand_matches("analyze") {
         let input_file = normalize_file_path(matches.value_of("input").unwrap())?;
