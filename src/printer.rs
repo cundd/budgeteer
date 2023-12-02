@@ -182,25 +182,26 @@ Notiz       : {}"#,
 
     fn print_month_sum(&self, month: Month, base_currency: &Currency, invoices: &[Invoice]) {
         if !invoices.is_empty() {
-            let max_type = Calculator::major_type(invoices).unwrap();
-
-            println!(
-                "{:width$}: {} {: >8.2} {}",
-                format!("{}", month),
-                base_currency,
-                Calculator::sum(invoices),
-                style_for_type(max_type, &max_type.identifier().to_string(), true, true),
-                width = 12
-            );
-        } else {
-            println!(
-                "{:width$}: {} {: >8.2}",
-                format!("{}", month),
-                base_currency,
-                0,
-                width = 12
-            )
+            if let Some(max_type) = Calculator::major_type(invoices) {
+                println!(
+                    "{:width$}: {} {: >8.2} {}",
+                    format!("{}", month),
+                    base_currency,
+                    Calculator::sum(invoices),
+                    style_for_type(max_type, &max_type.identifier().to_string(), true, true),
+                    width = 12
+                );
+                return;
+            }
         }
+
+        println!(
+            "{:width$}: {} {: >8.2}",
+            format!("{}", month),
+            base_currency,
+            0,
+            width = 12
+        )
     }
 }
 
