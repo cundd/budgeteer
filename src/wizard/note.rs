@@ -22,14 +22,26 @@ impl WizardTrait<String> for NoteWizard {
 }
 
 struct NoteCompletion {
-    options: HashSet<String>,
+    options: Vec<String>,
 }
 
 impl NoteCompletion {
     fn new(invoices: &[Invoice]) -> Self {
-        Self {
-            options: invoices.iter().filter_map(|i| i.note()).collect(),
-        }
+        // Get unique notes
+        let notes = invoices
+            .iter()
+            .filter_map(|i| match i.note() {
+                Some(note) if note.is_empty() => None,
+                Some(note) => Some(note),
+                None => None,
+            })
+            .collect::<HashSet<String>>();
+
+        // Sort the notes
+        let mut options = Vec::from_iter(notes.into_iter());
+        options.sort();
+
+        Self { options }
     }
 }
 
@@ -37,16 +49,10 @@ impl Completion for NoteCompletion {
     /// Simple completion implementation based on substring
     fn get(&self, input: &str) -> Option<String> {
         let input_uppercase = input.to_uppercase();
-        let matches = self
-            .options
-            .iter()
-            .filter(|option| option.to_uppercase().starts_with(&input_uppercase))
-            .collect::<Vec<_>>();
 
-        if !matches.is_empty() {
-            Some(matches[0].to_string())
-        } else {
-            None
-        }
+        self.options
+            .iter()
+            .find(|option| option.to_uppercase().starts_with(&input_uppercase))
+            .cloned()
     }
 }
