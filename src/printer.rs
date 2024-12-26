@@ -22,7 +22,7 @@ pub trait PrinterTrait {
 
     fn print_invoices(&self, base_currency: &Currency, invoices: &[Invoice]) {
         for invoice in invoices {
-            self.print_invoice(&base_currency, invoice)
+            self.print_invoice(base_currency, invoice)
         }
         println!()
     }
@@ -62,7 +62,7 @@ impl Printer {
 
             print_styled_for_type(
                 invoice_type,
-                &format!(
+                format!(
                     "{:width$}: {:<4} {: >8.2}  ",
                     format!("{}", invoice_type),
                     base_currency.symbol,
@@ -77,7 +77,7 @@ impl Printer {
                 let sum = Calculator::sum_for_type_and_currency(invoices, invoice_type, currency);
                 print_styled_for_type(
                     invoice_type,
-                    &format!(" | {:<4} {: >8.2}", currency.symbol, sum,),
+                    format!(" | {:<4} {: >8.2}", currency.symbol, sum,),
                     false,
                     true,
                 );
@@ -85,7 +85,7 @@ impl Printer {
 
             print_styled_for_type(
                 invoice_type,
-                &invoice_type.identifier().to_string(),
+                invoice_type.identifier().to_string(),
                 true,
                 true,
             );
@@ -188,7 +188,7 @@ Notiz       : {}"#,
                     format!("{}", month),
                     base_currency,
                     Calculator::sum(invoices),
-                    style_for_type(max_type, &max_type.identifier().to_string(), true, true),
+                    style_for_type(max_type, max_type.identifier().to_string(), true, true),
                     width = 12
                 );
                 return;

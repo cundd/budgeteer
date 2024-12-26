@@ -52,7 +52,7 @@ impl InvoiceParser {
         let currency = Currency::from_string(&raw_currency)?;
         let amount = Amount::new(self.parse_amount(&string_vec)?, &currency);
 
-        let invoice_type = InvoiceType::from_str(&string_vec.get(3).unwrap_or(&"".to_string()));
+        let invoice_type = InvoiceType::from_str(string_vec.get(3).unwrap_or(&"".to_string()));
         let note = self.get_vec_part(&string_vec, 4);
         let base_amount = None;
 
@@ -60,7 +60,7 @@ impl InvoiceParser {
     }
 
     fn parse_date(&self, string_vec: &[String]) -> Result<NaiveDate, Error> {
-        match self.get_vec_part_or_error(&string_vec, 0, "Could not read date from line") {
+        match self.get_vec_part_or_error(string_vec, 0, "Could not read date from line") {
             Ok(s) => match NaiveDate::parse_from_str(&s, "%d.%m.%Y") {
                 Ok(d) => Ok(d),
                 Err(e) => Err(Error::ParseError(format!(
@@ -74,7 +74,7 @@ impl InvoiceParser {
 
     fn parse_amount(&self, string_vec: &[String]) -> Result<f64, Error> {
         let amount_string =
-            self.get_vec_part_or_error(&string_vec, 2, "Could not read amount from line")?;
+            self.get_vec_part_or_error(string_vec, 2, "Could not read amount from line")?;
 
         match amount_string
             .trim()
@@ -90,10 +90,7 @@ impl InvoiceParser {
     }
 
     fn get_vec_part(&self, string_vec: &[String], index: usize) -> Option<String> {
-        match string_vec.get(index) {
-            Some(s) => Some(s.to_owned()),
-            None => None,
-        }
+        string_vec.get(index).map(|s| s.to_owned())
     }
 
     fn get_vec_part_or_error(

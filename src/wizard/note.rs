@@ -38,7 +38,7 @@ impl NoteCompletion {
             .collect::<HashSet<String>>();
 
         // Sort the notes
-        let mut options = Vec::from_iter(notes.into_iter());
+        let mut options = Vec::from_iter(notes);
         options.sort();
 
         Self { options }

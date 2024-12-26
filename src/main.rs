@@ -136,7 +136,7 @@ fn execute(root_matches: ArgMatches) -> Res<()> {
     }
     if let Some(matches) = root_matches.subcommand_matches("analyze") {
         let input_file = normalize_file_path(matches.value_of("input").unwrap())?;
-        let filter_request = build_filter_request(&matches)?;
+        let filter_request = build_filter_request(matches)?;
         let verbosity = Verbosity::from_int(matches.occurrences_of("v"));
 
         if verbosity >= Verbosity::Info {
@@ -155,7 +155,7 @@ fn execute(root_matches: ArgMatches) -> Res<()> {
         if filter_request.month().is_none() {
             for month in 1..13 {
                 filter_and_print_month_sum(
-                    &matches,
+                    matches,
                     &printer,
                     &base_currency,
                     &invoices_to_print,
@@ -185,12 +185,12 @@ fn load_and_display_invoices<P: AsRef<Path>>(
     let invoices_to_print = get_invoices(
         input_file,
         filter_request,
-        &base_currency,
-        &printer,
+        base_currency,
+        printer,
         verbosity,
     )?;
 
-    printer.print_invoices(&base_currency, &invoices_to_print);
+    printer.print_invoices(base_currency, &invoices_to_print);
 
     Ok(invoices_to_print)
 }
@@ -202,9 +202,9 @@ fn filter_and_print_month_sum(
     all_invoices: &[Invoice],
     month: u32,
 ) {
-    if let Ok(filter_request) = build_month_filter_request(&matches, month) {
-        let invoices = Filter::filter(&all_invoices, &filter_request);
-        printer.print_month_sum(month.into(), &base_currency, &invoices);
+    if let Ok(filter_request) = build_month_filter_request(matches, month) {
+        let invoices = Filter::filter(all_invoices, &filter_request);
+        printer.print_month_sum(month.into(), base_currency, &invoices);
     }
 }
 
@@ -253,7 +253,7 @@ fn get_invoices<P: AsRef<Path>>(
     let invoices = if filter_request.is_none() || filter_request.unwrap().empty() {
         all_invoices
     } else {
-        Filter::filter(&all_invoices, &filter_request.unwrap())
+        Filter::filter(&all_invoices, filter_request.unwrap())
     };
 
     printer.print_errors(result.errors);
@@ -265,7 +265,7 @@ fn get_invoices<P: AsRef<Path>>(
     let rate_map = match RateProvider::fetch_rates(
         invoices.first().unwrap().date(),
         invoices.last().unwrap().date(),
-        collect_currencies(&invoices, &base_currency),
+        collect_currencies(&invoices, base_currency),
     ) {
         Ok(rate_map) => rate_map,
         Err(e) => {
@@ -283,9 +283,9 @@ fn get_invoices<P: AsRef<Path>>(
         .collect())
 }
 
-fn collect_currencies<'a, 'b>(
+fn collect_currencies<'a>(
     invoices: &'a [Invoice],
-    base_currency: &'b Currency,
+    base_currency: &Currency,
 ) -> Vec<&'a str> {
     let mut currencies: HashSet<_> = HashSet::new();
     for invoice in invoices {

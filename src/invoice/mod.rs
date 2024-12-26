@@ -112,6 +112,5 @@ impl PartialOrd for Invoice {
 pub fn contains_invoice_in_currency(invoices: &[Invoice], currency: &Currency) -> bool {
     invoices
         .iter()
-        .find(|invoice| invoice.amount_ref().currency_ref() == currency)
-        .is_some()
+        .any(|invoice| invoice.amount_ref().currency_ref() == currency)
 }

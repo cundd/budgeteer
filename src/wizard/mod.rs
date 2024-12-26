@@ -69,7 +69,7 @@ impl Wizard {
 
         println!();
         println!("Read the following invoice:");
-        printer.print_invoice(&base_currency, &invoice);
+        printer.print_invoice(base_currency, &invoice);
 
         let confirm = Confirm::with_theme(self.theme.as_ref());
         if confirm

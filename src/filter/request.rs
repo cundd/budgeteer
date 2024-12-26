@@ -104,10 +104,7 @@ impl Request {
     }
 
     fn parse_invoice_type(option: Option<&str>) -> Option<InvoiceType> {
-        match option {
-            Some(o) => Some(InvoiceType::from_str(o)),
-            None => None,
-        }
+        option.map(InvoiceType::from_str)
     }
 }
 

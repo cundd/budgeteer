@@ -50,7 +50,7 @@ impl RateProvider {
             .rates
             .iter()
             .flat_map(|(raw_date, raw_rate)| {
-                RateProvider::build_rate(&symbols, &raw_date, raw_rate)
+                RateProvider::build_rate(&symbols, raw_date, raw_rate)
             })
             .collect::<Vec<Rate>>();
 
@@ -63,7 +63,7 @@ impl RateProvider {
     }
 
     fn build_rate(symbols: &[&str], raw_date: &str, raw_rate: &Value) -> Vec<Rate> {
-        let date = match NaiveDate::parse_from_str(&raw_date, DATE_FORMAT) {
+        let date = match NaiveDate::parse_from_str(raw_date, DATE_FORMAT) {
             Ok(d) => d,
             Err(e) => {
                 eprintln!("{}", e);

@@ -49,8 +49,7 @@ fn prepare_raw_date<S: Into<String>>(raw_date: S) -> String {
                 now.year()
             };
             return format!("{}.{:02}.{:02}", parts[0], now.month(), year);
-        } else {
-        }
+        } 
     }
 
     raw_date_string
