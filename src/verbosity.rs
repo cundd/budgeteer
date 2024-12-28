@@ -7,7 +7,7 @@ pub enum Verbosity {
 }
 
 impl Verbosity {
-    pub fn from_int(level: u64) -> Self {
+    pub fn from_int(level: u8) -> Self {
         match level {
             0 => Verbosity::Normal,
             1 => Verbosity::Info,

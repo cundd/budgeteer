@@ -89,8 +89,8 @@ impl Calculator {
     }
 
     #[allow(unused)]
-    pub fn sort(invoices: &Vec<Invoice>) -> Vec<Invoice> {
-        let mut clone = invoices.clone();
+    pub fn sort(invoices: &[Invoice]) -> Vec<Invoice> {
+        let mut clone = invoices.to_owned();
         clone.sort_by(|a, b| a.partial_cmp(b).map(|s| s.reverse()).unwrap());
 
         clone

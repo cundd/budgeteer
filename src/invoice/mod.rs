@@ -1,11 +1,9 @@
-use std::cmp::Ordering;
-use std::fmt;
-
-use chrono::prelude::*;
-
 use crate::currency::Currency;
 use crate::invoice::amount::Amount;
 use crate::invoice::invoice_type::InvoiceType;
+use chrono::prelude::*;
+use std::cmp::Ordering;
+use std::fmt;
 
 pub mod amount;
 pub mod invoice_parser;
@@ -36,19 +34,19 @@ impl Invoice {
             note,
         }
     }
-    
+
     pub fn date(&self) -> NaiveDate {
         self.date
     }
-    
+
     pub fn amount(&self) -> Amount {
         self.amount.clone()
     }
-    
+
     pub fn amount_ref(&self) -> &Amount {
         &self.amount
     }
-    
+
     pub fn base_amount(&self) -> Option<Amount> {
         self.base_amount.clone()
     }

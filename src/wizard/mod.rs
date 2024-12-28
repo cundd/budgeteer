@@ -34,8 +34,12 @@ pub struct Wizard {
 
 impl Wizard {
     pub fn new() -> Wizard {
-        let mut theme = ColorfulTheme::default();
-        theme.defaults_style = Style::new().blink();
+        // let mut theme = ColorfulTheme::default();
+        // theme.defaults_style = Style::new().blink();
+        let theme = ColorfulTheme {
+            defaults_style: Style::new().blink(),
+            ..Default::default()
+        };
 
         Wizard {
             theme: Box::new(theme),

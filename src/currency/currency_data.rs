@@ -1,6 +1,6 @@
-use std::collections::HashMap;
-
 use crate::currency::Currency;
+use lazy_static::lazy_static;
+use std::collections::HashMap;
 
 pub type CurrencyMap = HashMap<&'static str, Currency>;
 

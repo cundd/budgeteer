@@ -119,7 +119,7 @@ mod tests {
             Ok(i) => {
                 assert_eq!(i.invoice_type, InvoiceType::Gas);
                 assert_eq!(i.amount, Amount::new(66.6, &Currency::eur()));
-                assert_eq!(i.date, NaiveDate::from_ymd_opt(2019, 02, 15).unwrap());
+                assert_eq!(i.date, NaiveDate::from_ymd_opt(2019, 2, 15).unwrap());
                 assert!(i.note.is_some());
                 assert_eq!(i.note.unwrap(), "Gas station");
             }

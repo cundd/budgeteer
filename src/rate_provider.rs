@@ -1,10 +1,10 @@
-use std::collections::HashMap;
-
-use chrono::NaiveDate;
-use serde_json::{from_reader, Value};
-
 use crate::error::Error;
 use crate::error::Res;
+use chrono::NaiveDate;
+use serde::Deserialize;
+use serde::Serialize;
+use serde_json::{from_reader, Value};
+use std::collections::HashMap;
 
 pub struct RateProvider {}
 
@@ -49,9 +49,7 @@ impl RateProvider {
         let rates = raw_rates
             .rates
             .iter()
-            .flat_map(|(raw_date, raw_rate)| {
-                RateProvider::build_rate(&symbols, raw_date, raw_rate)
-            })
+            .flat_map(|(raw_date, raw_rate)| RateProvider::build_rate(&symbols, raw_date, raw_rate))
             .collect::<Vec<Rate>>();
 
         let mut result_map = HashMap::new();

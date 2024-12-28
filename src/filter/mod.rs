@@ -27,11 +27,13 @@ impl Filter {
         if request.day().is_some() && invoice.date().day() != request.day().unwrap() {
             return false;
         }
+
         if request.invoice_type().is_some()
             && invoice.invoice_type() != request.invoice_type().unwrap()
         {
             return false;
         }
+
         true
     }
 }

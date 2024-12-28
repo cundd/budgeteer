@@ -1,10 +1,8 @@
-use dialoguer::Completion;
-
 use crate::currency::currency_data::all;
 use crate::currency::Currency;
-
 use crate::error::Res;
 use dialoguer::theme::Theme;
+use dialoguer::Completion;
 use dialoguer::Input;
 
 pub fn read_currency(theme: &dyn Theme) -> Res<Currency> {

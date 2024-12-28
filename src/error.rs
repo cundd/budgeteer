@@ -100,7 +100,7 @@ impl From<dialoguer::Error> for Error {
     }
 }
 
-impl<'a> From<&'a io::Error> for Error {
+impl From<&io::Error> for Error {
     fn from(error: &io::Error) -> Self {
         Error::FileIO(format!("{}", error))
     }
