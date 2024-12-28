@@ -84,7 +84,8 @@ enum Commands {
     ShowTypes {},
 }
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cli = Cli::parse();
 
     match &cli.command {
@@ -114,7 +115,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 input_file,
                 Some(&filter_request),
                 verbosity,
-            )?;
+            )
+            .await?;
 
             // Print an overview of the months, if there is **no** filter for the month
             if filter_request.month().is_none() {
@@ -146,6 +148,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 let verbosity = Verbosity::from_int(*verbosity);
                 println!("The output file contains these invoices:");
                 load_and_display_invoices(&printer, &base_currency, &output_file, None, verbosity)
+                    .await
                     .unwrap_or_default()
             } else {
                 vec![]
@@ -176,7 +179,7 @@ fn year_argument_parser(input: &str) -> Result<i32, String> {
         .map_err(|_| format!("`{input}` isn't a valid year"))
 }
 
-fn load_and_display_invoices<P: AsRef<Path>>(
+async fn load_and_display_invoices<P: AsRef<Path>>(
     printer: &Printer,
     base_currency: &Currency,
     input_file: P,
@@ -189,7 +192,8 @@ fn load_and_display_invoices<P: AsRef<Path>>(
         base_currency,
         printer,
         verbosity,
-    )?;
+    )
+    .await?;
 
     printer.print_invoices(base_currency, &invoices_to_print);
 
@@ -208,7 +212,7 @@ fn filter_and_print_month_sum(
     printer.print_month_sum(month.into(), base_currency, &invoices);
 }
 
-fn get_invoices<P: AsRef<Path>>(
+async fn get_invoices<P: AsRef<Path>>(
     input_file: P,
     filter_request: Option<&Request>,
     base_currency: &Currency,
@@ -234,7 +238,9 @@ fn get_invoices<P: AsRef<Path>>(
         invoices.first().unwrap().date(),
         invoices.last().unwrap().date(),
         collect_currencies(&invoices, base_currency),
-    ) {
+    )
+    .await
+    {
         Ok(rate_map) => rate_map,
         Err(e) => {
             if verbosity >= Verbosity::Debug {

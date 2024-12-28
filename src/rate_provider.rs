@@ -3,6 +3,7 @@ use crate::error::Res;
 use chrono::NaiveDate;
 use serde::Deserialize;
 use serde::Serialize;
+use serde_json::from_str;
 use serde_json::{from_reader, Value};
 use std::collections::HashMap;
 
@@ -34,18 +35,19 @@ struct RawRates {
 }
 
 impl RateProvider {
-    pub fn fetch_rates(
+    pub async fn fetch_rates(
         start: NaiveDate,
         end: NaiveDate,
         symbols: Vec<&str>,
     ) -> Res<HashMap<String, Rate>> {
         let request_url = RateProvider::build_request_url(start, end, &symbols);
 
-        let body = reqwest::blocking::get(&request_url)?.text()?;
-        let response = reqwest::blocking::get(&request_url)?;
-        let raw_rates = match from_reader::<_, RawRates>(response) {
+        let body = reqwest::get(&request_url).await?.text().await?;
+        let raw_rates: RawRates = match from_str(&body) {
             Ok(r) => r,
-            Err(e) => return Err(Error::Rate(format!("{} for body '{}'", e, body))),
+            Err(e) => {
+                return Err(Error::Rate(format!("{} for body '{}'", e, body)));
+            }
         };
         let rates = raw_rates
             .rates
