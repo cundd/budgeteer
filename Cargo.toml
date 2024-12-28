@@ -1,6 +1,6 @@
 [package]
 name = "budgeteer"
-version = "0.1.3"
+version = "2.0.0-dev"
 authors = ["Daniel Corn <info@corn.rest>"]
 edition = "2021"
 
