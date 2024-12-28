@@ -1,9 +1,8 @@
-mod request;
-
 pub use self::request::*;
-
 use crate::invoice::Invoice;
 use chrono::Datelike;
+
+mod request;
 
 pub struct Filter {}
 

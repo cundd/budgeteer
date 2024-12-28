@@ -8,8 +8,8 @@ pub type Res<T, E = Error> = ::std::result::Result<T, E>;
 #[derive(Debug, Clone, PartialEq)]
 pub enum Error {
     FileIO(String),
-    ParseError(String),
-    RateError(String),
+    Parse(String),
+    Rate(String),
     #[allow(dead_code)]
     General(String),
     LineEmpty,
@@ -21,12 +21,12 @@ impl Error {
     fn description(&self) -> &str {
         match *self {
             Error::FileIO(_) => "File IO error",
-            Error::ParseError(_) => "Parse Error",
+            Error::Parse(_) => "Parse Error",
             Error::General(_) => "General Error",
             Error::LineComment => "Line comment",
             Error::LineEmpty => "Line empty",
             Error::LineSeparator => "Line separator",
-            Error::RateError(_) => "Rate Error",
+            Error::Rate(_) => "Rate Error",
         }
     }
 
@@ -45,9 +45,9 @@ impl fmt::Display for Error {
             Error::LineComment => write!(f, "{}", self.description()),
             Error::LineEmpty => write!(f, "{}", self.description()),
             Error::LineSeparator => write!(f, "{}", self.description()),
-            Error::ParseError(ref s) => write!(f, "{}: {}", self.description(), s),
+            Error::Parse(ref s) => write!(f, "{}: {}", self.description(), s),
             Error::General(ref s) => write!(f, "{}: {}", self.description(), s),
-            Error::RateError(ref s) => write!(f, "{}: {}", self.description(), s),
+            Error::Rate(ref s) => write!(f, "{}: {}", self.description(), s),
         }
     }
 }
@@ -66,31 +66,31 @@ impl From<io::Error> for Error {
 
 impl From<num::ParseFloatError> for Error {
     fn from(_: num::ParseFloatError) -> Self {
-        Error::ParseError("Could not parse number".to_owned())
+        Error::Parse("Could not parse number".to_owned())
     }
 }
 
 impl From<num::ParseIntError> for Error {
     fn from(_: num::ParseIntError) -> Self {
-        Error::ParseError("Could not parse number".to_owned())
+        Error::Parse("Could not parse number".to_owned())
     }
 }
 
 impl From<chrono::ParseError> for Error {
     fn from(e: chrono::ParseError) -> Self {
-        Error::ParseError(format!("Could not parse date: {}", &e))
+        Error::Parse(format!("Could not parse date: {}", &e))
     }
 }
 
 impl From<reqwest::Error> for Error {
     fn from(e: reqwest::Error) -> Self {
-        Error::RateError(format!("Could not fetch rates: {}", &e))
+        Error::Rate(format!("Could not fetch rates: {}", &e))
     }
 }
 
 impl From<serde_json::Error> for Error {
     fn from(e: serde_json::Error) -> Self {
-        Error::RateError(format!("Could not parse rates JSON: {}", &e))
+        Error::Rate(format!("Could not parse rates JSON: {}", &e))
     }
 }
 

@@ -63,7 +63,7 @@ impl InvoiceParser {
         match self.get_vec_part_or_error(string_vec, 0, "Could not read date from line") {
             Ok(s) => match NaiveDate::parse_from_str(&s, "%d.%m.%Y") {
                 Ok(d) => Ok(d),
-                Err(e) => Err(Error::ParseError(format!(
+                Err(e) => Err(Error::Parse(format!(
                     "Could not parse date '{}': {}",
                     s, &e
                 ))),
@@ -82,7 +82,7 @@ impl InvoiceParser {
             .parse::<f64>()
         {
             Ok(f) => Ok(f),
-            Err(e) => Err(Error::ParseError(format!(
+            Err(e) => Err(Error::Parse(format!(
                 "Could not parse amount '{}': {}",
                 amount_string, e
             ))),
@@ -101,7 +101,7 @@ impl InvoiceParser {
     ) -> Result<String, Error> {
         match string_vec.get(index) {
             Some(s) => Ok(s.trim().to_owned()),
-            None => Err(Error::ParseError(msg.to_owned())),
+            None => Err(Error::Parse(msg.to_owned())),
         }
     }
 }

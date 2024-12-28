@@ -8,6 +8,7 @@ use std::collections::HashMap;
 
 pub struct RateProvider {}
 
+#[allow(dead_code)]
 #[derive(Debug)]
 pub struct Rate {
     pub date: NaiveDate,
@@ -44,7 +45,7 @@ impl RateProvider {
         let response = reqwest::blocking::get(&request_url)?;
         let raw_rates = match from_reader::<_, RawRates>(response) {
             Ok(r) => r,
-            Err(e) => return Err(Error::RateError(format!("{} for body '{}'", e, body))),
+            Err(e) => return Err(Error::Rate(format!("{} for body '{}'", e, body))),
         };
         let rates = raw_rates
             .rates

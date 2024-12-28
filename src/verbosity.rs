@@ -1,3 +1,5 @@
+use core::panic;
+
 #[derive(PartialOrd, PartialEq)]
 pub enum Verbosity {
     Normal = 0,
@@ -12,7 +14,8 @@ impl Verbosity {
             0 => Verbosity::Normal,
             1 => Verbosity::Info,
             2 => Verbosity::Debug,
-            3 | _ => Verbosity::Trace,
+            3 => Verbosity::Trace,
+            _ => panic!("Invalid verbosity"),
         }
     }
 }

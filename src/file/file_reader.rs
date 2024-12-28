@@ -6,6 +6,7 @@ use std::path::Path;
 
 pub type LineParts = Vec<String>;
 
+#[allow(dead_code)]
 pub struct ReadFileResult {
     pub lines: Vec<LineParts>,
     pub errors: Vec<Error>,

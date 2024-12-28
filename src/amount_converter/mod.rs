@@ -35,7 +35,7 @@ impl AmountConverter {
         let rate = match self.rate_map.get(&invoice_date_formatted.to_string()) {
             Some(f) => f.rate,
             None => {
-                return Err(Error::RateError(format!(
+                return Err(Error::Rate(format!(
                     "Currency '{}' not found in map for date {}",
                     amount.currency(),
                     invoice_date_formatted

@@ -219,10 +219,9 @@ fn get_invoices<P: AsRef<Path>>(
     let parser = InvoiceParser::new();
     let result = parser.parse_lines(lines.lines);
     let all_invoices = result.invoices;
-    let invoices = if filter_request.is_none() || filter_request.unwrap().empty() {
-        all_invoices
-    } else {
-        Filter::filter(&all_invoices, filter_request.unwrap())
+    let invoices = match filter_request {
+        Some(filter) if !filter.empty() => Filter::filter(&all_invoices, filter_request.unwrap()),
+        _ => all_invoices,
     };
 
     printer.print_errors(result.errors);
