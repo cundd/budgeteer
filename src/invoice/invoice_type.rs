@@ -2,7 +2,7 @@ use crate::error::Error;
 use std::str::FromStr;
 use std::{char, fmt};
 
-#[derive(Clone, PartialOrd, PartialEq, Copy, Debug, clap::ValueEnum, sqlx::Type)]
+#[derive(Clone, PartialOrd, PartialEq, Eq, Copy, Debug, Hash, clap::ValueEnum, sqlx::Type)]
 #[repr(u8)]
 pub enum InvoiceType {
     // "A" => Car / Auto

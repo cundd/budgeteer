@@ -7,13 +7,10 @@ pub struct Calculator {}
 
 impl Calculator {
     pub fn sum(invoices: &[Invoice]) -> f64 {
-        let mut sum = 0.0;
-        for invoice in invoices {
-            if let Some(a) = invoice.base_amount() {
-                sum += a.value()
-            }
-        }
-        sum
+        invoices
+            .iter()
+            .filter_map(|i: &Invoice| i.base_amount.as_ref().map(|a| a.value))
+            .sum()
     }
 
     pub fn major_type(invoices: &[Invoice]) -> Option<InvoiceType> {

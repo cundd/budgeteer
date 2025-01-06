@@ -6,6 +6,7 @@ use crate::invoice::{contains_invoice_in_currency, Invoice};
 use crate::month::Month;
 use ansi_term::Colour::RGB;
 use ansi_term::{Colour, Style};
+use std::collections::HashMap;
 use std::env;
 
 pub trait PrinterTrait {
@@ -46,8 +47,7 @@ impl Printer {
 
         self.print_type_sum_header(&currencies_to_output);
 
-        for invoice_type in InvoiceType::all().iter() {
-            let invoice_type = *invoice_type;
+        for invoice_type in InvoiceType::all() {
             let sum = Calculator::sum_for_type(invoices, invoice_type);
 
             print_styled_for_type(
@@ -61,6 +61,7 @@ impl Printer {
                 ),
                 false,
                 true,
+                true,
             );
 
             for currency in &currencies_to_output {
@@ -70,6 +71,7 @@ impl Printer {
                     format!(" | {:<4} {: >8.2}", currency.symbol, sum,),
                     false,
                     true,
+                    true,
                 );
             }
 
@@ -78,7 +80,45 @@ impl Printer {
                 invoice_type.identifier().to_string(),
                 true,
                 true,
+                true,
             );
+            println!()
+        }
+
+        println!();
+        println!("Chart");
+        self.print_bar_chart(base_currency, invoices);
+    }
+
+    /// Print the "bar chart"
+    fn print_bar_chart(&self, _base_currency: &Currency, invoices: &[Invoice]) {
+        let mut sum_map = HashMap::new();
+        for invoice_type in InvoiceType::all() {
+            let sum = Calculator::sum_for_type(invoices, invoice_type);
+            sum_map.insert(invoice_type, sum);
+        }
+
+        let total: f64 = Calculator::sum(invoices);
+        // Use `InvoiceType::all()` again, to maintain the sorting
+        for invoice_type in InvoiceType::all() {
+            let sum = sum_map[&invoice_type];
+            let percent = 100.0 * sum / total;
+
+            let width = percent.ceil() as usize;
+            let text = format!(" {}: {:.2}%", invoice_type, percent);
+            if text.len() <= width {
+                print_styled_for_type(
+                    invoice_type,
+                    format!("{:<width$}", text),
+                    false,
+                    true,
+                    false,
+                );
+            } else {
+                print_styled_for_type(invoice_type, &text[..width], false, true, false);
+                print!("{}", &text[width..]);
+            }
+
             println!()
         }
     }
@@ -127,7 +167,7 @@ impl PrinterTrait for Printer {
 Betrag      : {}
 Typ         : {}
 Notiz       : {}"#,
-                style_for_type(invoice_type, " ", false, true),
+                style_for_type(invoice_type, " ", false, true, true),
                 date,
                 amount_string,
                 invoice_type,
@@ -169,7 +209,13 @@ Notiz       : {}"#,
                     format!("{}", month),
                     base_currency,
                     Calculator::sum(invoices),
-                    style_for_type(max_type, max_type.identifier().to_string(), true, true),
+                    style_for_type(
+                        max_type,
+                        max_type.identifier().to_string(),
+                        true,
+                        true,
+                        true
+                    ),
                     width = 12
                 );
                 return;
@@ -186,7 +232,13 @@ Notiz       : {}"#,
     }
 }
 
-fn style_for_type<T: AsRef<str>>(invoice_type: InvoiceType, text: T, fg: bool, bg: bool) -> String {
+fn style_for_type<T: AsRef<str>>(
+    invoice_type: InvoiceType,
+    text: T,
+    fg: bool,
+    bg: bool,
+    add_space: bool,
+) -> String {
     if !has_true_color_support() {
         return text.as_ref().to_owned();
     }
@@ -195,10 +247,12 @@ fn style_for_type<T: AsRef<str>>(invoice_type: InvoiceType, text: T, fg: bool, b
         .as_ref()
         .lines()
         .map(|l| {
-            if !l.is_empty() {
+            if l.is_empty() {
+                "".to_owned()
+            } else if add_space {
                 format!(" {} ", l)
             } else {
-                "".to_owned()
+                l.to_owned()
             }
         })
         .collect::<Vec<String>>()
@@ -221,8 +275,14 @@ fn style_for_type<T: AsRef<str>>(invoice_type: InvoiceType, text: T, fg: bool, b
     style.paint(prepared_multi_line).to_string()
 }
 
-fn print_styled_for_type<T: AsRef<str>>(invoice_type: InvoiceType, text: T, fg: bool, bg: bool) {
-    print!("{}", style_for_type(invoice_type, text, fg, bg))
+fn print_styled_for_type<T: AsRef<str>>(
+    invoice_type: InvoiceType,
+    text: T,
+    fg: bool,
+    bg: bool,
+    add_space: bool,
+) {
+    print!("{}", style_for_type(invoice_type, text, fg, bg, add_space))
 }
 
 fn style_header<T: AsRef<str>>(text: T) -> String {
