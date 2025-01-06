@@ -15,6 +15,7 @@ pub enum Error {
     LineEmpty,
     LineSeparator,
     LineComment,
+    Persistence(String),
 }
 
 impl Error {
@@ -27,6 +28,7 @@ impl Error {
             Error::LineEmpty => "Line empty",
             Error::LineSeparator => "Line separator",
             Error::Rate(_) => "Rate Error",
+            Error::Persistence(_) => "Persistence Error",
         }
     }
 
@@ -48,6 +50,7 @@ impl fmt::Display for Error {
             Error::Parse(ref s) => write!(f, "{}: {}", self.description(), s),
             Error::General(ref s) => write!(f, "{}: {}", self.description(), s),
             Error::Rate(ref s) => write!(f, "{}: {}", self.description(), s),
+            Error::Persistence(ref s) => write!(f, "{}: {}", self.description(), s),
         }
     }
 }
@@ -99,6 +102,29 @@ impl From<dialoguer::Error> for Error {
         Error::General(format!("Input wizard error: {}", &e))
     }
 }
+
+impl From<sqlx::Error> for Error {
+    fn from(e: sqlx::Error) -> Self {
+        Error::Persistence(format!("Persistence error: {}", &e))
+    }
+}
+
+impl From<std::boxed::Box<dyn sqlx::error::DatabaseError>> for Error {
+    fn from(e: std::boxed::Box<dyn sqlx::error::DatabaseError>) -> Self {
+        Error::Persistence(format!("Database error: {}", &e.message()))
+    }
+}
+
+impl From<&dyn sqlx::error::DatabaseError> for Error {
+    fn from(e: &dyn sqlx::error::DatabaseError) -> Self {
+        Error::Persistence(format!("Database error: {}", &e.message()))
+    }
+}
+// impl<E: sqlx::error::DatabaseError> From<E> for Error {
+//     fn from(e: E) -> Self {
+//         Error::Persistence(format!("Database error: {}", &e.message()))
+//     }
+// }
 
 impl From<&io::Error> for Error {
     fn from(error: &io::Error) -> Self {

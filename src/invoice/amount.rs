@@ -4,24 +4,23 @@ use std::fmt;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Amount {
-    currency: Currency,
-    value: f64,
+    pub currency: Currency,
+    pub value: f64,
 }
 
 impl Amount {
-    pub fn new(value: f64, currency: &Currency) -> Self {
-        Amount {
-            currency: currency.to_owned(),
-            value,
-        }
+    pub fn new(value: f64, currency: Currency) -> Self {
+        Amount { currency, value }
     }
 
     pub fn currency(&self) -> Currency {
         self.currency.clone()
     }
+
     pub fn currency_ref(&self) -> &Currency {
         &self.currency
     }
+
     pub fn value(&self) -> f64 {
         self.value
     }

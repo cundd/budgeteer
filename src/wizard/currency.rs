@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use crate::currency::currency_data::all;
 use crate::currency::Currency;
 use crate::error::Res;
@@ -14,7 +16,7 @@ pub fn read_currency(theme: &dyn Theme) -> Res<Currency> {
         .interact_text()?
         .to_uppercase();
 
-    match Currency::from_string(&raw_currency) {
+    match Currency::from_str(&raw_currency) {
         Ok(c) => Ok(c),
         Err(_) => {
             println!("Please enter a valid currency");

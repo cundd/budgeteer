@@ -62,15 +62,22 @@ impl Calculator {
     }
 
     pub fn sum_for_type(invoices: &[Invoice], invoice_type: InvoiceType) -> f64 {
-        let mut sum = 0.0;
-        for invoice in invoices {
-            if invoice.invoice_type() == invoice_type {
-                if let Some(a) = invoice.base_amount() {
-                    sum += a.value()
+        let sum = invoices
+            .iter()
+            .filter_map(|i| {
+                if i.invoice_type() == invoice_type {
+                    i.base_amount().map(|a| a.value())
+                } else {
+                    None
                 }
-            }
+            })
+            .sum();
+
+        if sum != -0.0 {
+            sum
+        } else {
+            0.0
         }
-        sum
     }
 
     pub fn sum_for_type_and_currency(
@@ -78,14 +85,19 @@ impl Calculator {
         invoice_type: InvoiceType,
         currency: &Currency,
     ) -> f64 {
-        let mut sum = 0.0;
-        for invoice in invoices {
-            if invoice.invoice_type() == invoice_type && invoice.amount().currency_ref() == currency
-            {
-                sum += invoice.amount_ref().value()
-            }
+        let sum = invoices
+            .iter()
+            .filter(|i| {
+                i.invoice_type() == invoice_type && i.amount_ref().currency_ref() == currency
+            })
+            .map(|i| i.amount_ref().value())
+            .sum();
+
+        if sum != -0.0 {
+            sum
+        } else {
+            0.0
         }
-        sum
     }
 
     #[allow(unused)]

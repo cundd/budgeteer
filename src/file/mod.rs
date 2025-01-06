@@ -1,9 +1,3 @@
-mod file_reader;
-mod file_writer;
-
-pub use self::file_reader::FileReader;
-pub use self::file_reader::LineParts;
-pub use self::file_writer::FileWriter;
 use crate::error::{Error, Res};
 use std::path::{Path, PathBuf};
 use std::{env, fs};
@@ -18,14 +12,21 @@ pub fn normalize_file_path<P: AsRef<Path>>(path_input: P) -> Res<PathBuf> {
         match path.parent() {
             Some(parent) => {
                 if !parent.is_dir() {
-                    return prepend_current_working_directory(&path);
+                    return if path.is_absolute() {
+                        Err(Error::file_io(format!(
+                            "File parent directory {} not found",
+                            parent.display()
+                        )))
+                    } else {
+                        prepend_current_working_directory(&path)
+                    };
                 }
 
                 match fs::canonicalize(parent) {
                     Ok(_) => Ok(path.to_path_buf()),
                     Err(_) => Err(Error::file_io(format!(
                         "File parent directory {} not found",
-                        parent.to_path_buf().to_string_lossy()
+                        parent.display()
                     ))),
                 }
             }
@@ -36,11 +37,7 @@ pub fn normalize_file_path<P: AsRef<Path>>(path_input: P) -> Res<PathBuf> {
 
 fn prepend_current_working_directory(path: &&Path) -> Res<PathBuf> {
     match env::current_dir() {
-        Ok(cwd) => normalize_file_path(format!(
-            "{}/{}",
-            cwd.to_string_lossy(),
-            path.to_string_lossy()
-        )),
+        Ok(cwd) => normalize_file_path(format!("{}/{}", cwd.display(), path.display())),
         Err(_) => Err(Error::file_io("File has no parent directory")),
     }
 }
@@ -70,7 +67,8 @@ mod tests {
             env!("CARGO_MANIFEST_DIR").to_owned(),
             suffix
         );
-        assert!(normalize_file_path(&path).is_ok());
+        let result = normalize_file_path(&path);
+        assert!(result.is_ok(), "{}", result.unwrap_err());
         assert_eq!(normalize_file_path(&path).unwrap().to_string_lossy(), path);
     }
 

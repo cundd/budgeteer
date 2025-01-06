@@ -3,24 +3,21 @@ mod currency;
 mod date;
 mod invoice_type;
 mod note;
-use std::path::Path;
-
-use dialoguer::console::Style;
-use dialoguer::theme::{ColorfulTheme, Theme};
-use dialoguer::Confirm;
-
-use crate::currency::Currency;
-use crate::error::Res;
-use crate::file::FileWriter;
-use crate::invoice::amount::Amount;
-use crate::invoice::Invoice;
-use crate::printer::{Printer, PrinterTrait};
 
 use self::amount::read_amount;
 use self::currency::read_currency;
 use self::date::read_date;
 use self::invoice_type::read_invoice_type;
 use self::note::NoteWizard;
+use crate::currency::Currency;
+use crate::error::Res;
+use crate::invoice::amount::Amount;
+use crate::invoice::Invoice;
+use crate::persistence::InvoiceRepository;
+use crate::printer::{Printer, PrinterTrait};
+use dialoguer::console::Style;
+use dialoguer::theme::{ColorfulTheme, Theme};
+use dialoguer::Confirm;
 
 // Trait for "sub"-wizards
 trait WizardTrait<T> {
@@ -47,11 +44,11 @@ impl Wizard {
         }
     }
 
-    pub fn run<P: AsRef<Path>>(
+    pub async fn run(
         &self,
         printer: &Printer,
         base_currency: &Currency,
-        output_file: P,
+        repository: &InvoiceRepository,
         invoices: &[Invoice],
     ) -> Res<()> {
         println!("Welcome to the invoice wizard");
@@ -59,46 +56,36 @@ impl Wizard {
         println!("Answer the following questions to insert a new invoice");
         println!("(Press ctrl+c to exit)");
 
-        self.run_inner(printer, base_currency, output_file, invoices)
-    }
+        loop {
+            let invoice = self.create_invoice(invoices)?;
 
-    fn run_inner<P: AsRef<Path>>(
-        &self,
-        printer: &Printer,
-        base_currency: &Currency,
-        output_file: P,
-        invoices: &[Invoice],
-    ) -> Res<()> {
-        let invoice = self.create_invoice(invoices)?;
+            println!();
+            println!("Read the following invoice:");
+            printer.print_invoice(base_currency, &invoice);
 
-        println!();
-        println!("Read the following invoice:");
-        printer.print_invoice(base_currency, &invoice);
-
-        let confirm = Confirm::with_theme(self.theme.as_ref());
-        if confirm
-            .clone()
-            .with_prompt("Save this invoice?")
-            .default(true)
-            .interact()?
-        {
-            FileWriter::write_invoice(&output_file, &invoice)?;
-            println!("Saved the new invoice");
-
+            let confirm = Confirm::with_theme(self.theme.as_ref());
             if confirm
-                .with_prompt("Do you want to insert another invoice?")
+                .clone()
+                .with_prompt("Save this invoice?")
                 .default(true)
                 .interact()?
             {
-                self.run_inner(printer, base_currency, output_file, invoices)
-            } else {
-                Ok(())
-            }
-        } else {
-            println!();
-            println!("Build another invoice instead");
+                match repository.add(&invoice).await {
+                    Ok(id) => println!("Saved the new invoice #{}", id),
+                    Err(_) => eprintln!("Could not store the invoice"),
+                }
 
-            self.run_inner(printer, base_currency, output_file, invoices)
+                if !confirm
+                    .with_prompt("Do you want to insert another invoice?")
+                    .default(true)
+                    .interact()?
+                {
+                    return Ok(());
+                }
+            } else {
+                println!();
+                println!("Build another invoice instead");
+            }
         }
     }
 
@@ -112,7 +99,7 @@ impl Wizard {
 
         Ok(Invoice::new(
             date,
-            Amount::new(amount, &currency),
+            Amount::new(amount, currency),
             None,
             invoice_type,
             Some(note),

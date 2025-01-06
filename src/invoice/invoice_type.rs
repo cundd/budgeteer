@@ -1,28 +1,29 @@
 use crate::error::Error;
-use std::fmt;
 use std::str::FromStr;
+use std::{char, fmt};
 
-#[derive(Clone, PartialOrd, PartialEq, Copy, Debug, clap::ValueEnum)]
+#[derive(Clone, PartialOrd, PartialEq, Copy, Debug, clap::ValueEnum, sqlx::Type)]
+#[repr(u8)]
 pub enum InvoiceType {
     // "A" => Car / Auto
-    Car,
+    Car = b'A',
     // "C" => Clothes, Body & Cosmetics / Kleidung
-    Clothes,
+    Clothes = b'C',
     // "E" => Eat / Essen
-    Eat,
+    Eat = b'E',
     // "T" => Gas / Tanken
-    Gas,
+    Gas = b'T',
     // "F" => Fun / Hobby
-    Fun,
+    Fun = b'F',
     // "G" => Health / Gesundheit
-    Health,
+    Health = b'G',
     // "H" => Home / Haus
-    Home,
+    Home = b'H',
     // "I" => Internet / Handy / TV
-    Telecommunication,
+    Telecommunication = b'I',
 
     // Unknown
-    Unknown,
+    Unknown = b'U',
 }
 
 impl InvoiceType {
@@ -43,17 +44,7 @@ impl InvoiceType {
     }
 
     pub fn identifier(&self) -> char {
-        match self {
-            InvoiceType::Car => 'A',
-            InvoiceType::Clothes => 'C',
-            InvoiceType::Eat => 'E',
-            InvoiceType::Fun => 'F',
-            InvoiceType::Gas => 'T',
-            InvoiceType::Health => 'G',
-            InvoiceType::Home => 'H',
-            InvoiceType::Telecommunication => 'I',
-            InvoiceType::Unknown => ' ',
-        }
+        char::from_u32(*self as isize as u32).unwrap()
     }
 
     /// Return all invoice types except `InvoiceType::Unknown`
@@ -71,7 +62,7 @@ impl InvoiceType {
     }
 
     /// Return all invoice types (including `InvoiceType::Unknown`)
-    pub fn all() -> [InvoiceType; 8] {
+    pub fn all() -> [InvoiceType; 9] {
         [
             InvoiceType::Car,
             InvoiceType::Clothes,
@@ -81,6 +72,7 @@ impl InvoiceType {
             InvoiceType::Health,
             InvoiceType::Home,
             InvoiceType::Telecommunication,
+            InvoiceType::Unknown,
         ]
     }
 }
@@ -99,7 +91,7 @@ impl fmt::Display for InvoiceType {
             InvoiceType::Unknown => "Diverse",
         };
 
-        write!(f, "{}", description)
+        f.write_str(description)
     }
 }
 

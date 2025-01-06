@@ -1,25 +1,14 @@
-use std::env;
-
-use ansi_term::Colour::RGB;
-use ansi_term::{Colour, Style};
-
 use crate::calculator::Calculator;
 use crate::currency::{currency_data, Currency};
-use crate::error::Error;
 use crate::filter::Request;
 use crate::invoice::invoice_type::InvoiceType;
 use crate::invoice::{contains_invoice_in_currency, Invoice};
 use crate::month::Month;
+use ansi_term::Colour::RGB;
+use ansi_term::{Colour, Style};
+use std::env;
 
 pub trait PrinterTrait {
-    fn print_errors(&self, errors: Vec<Error>) {
-        for ref error in errors {
-            self.print_error(error);
-        }
-    }
-
-    fn print_error(&self, error: &Error);
-
     fn print_invoices(&self, base_currency: &Currency, invoices: &[Invoice]) {
         for invoice in invoices {
             self.print_invoice(base_currency, invoice)
@@ -54,6 +43,7 @@ impl Printer {
                 }
             })
             .collect();
+
         self.print_type_sum_header(&currencies_to_output);
 
         for invoice_type in InvoiceType::all().iter() {
@@ -115,15 +105,6 @@ impl Printer {
 }
 
 impl PrinterTrait for Printer {
-    fn print_error(&self, error: &Error) {
-        match error {
-            Error::LineComment => {}
-            Error::LineEmpty => {}
-            Error::LineSeparator => {}
-            _ => eprintln!("Invoice error {}", error),
-        }
-    }
-
     fn print_invoice(&self, base_currency: &Currency, invoice: &Invoice) {
         let note = get_prepared_note(invoice);
 

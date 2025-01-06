@@ -2,20 +2,22 @@ use crate::currency::Currency;
 use crate::invoice::amount::Amount;
 use crate::invoice::invoice_type::InvoiceType;
 use chrono::prelude::*;
+use sqlx::prelude::FromRow;
+use sqlx::sqlite::SqliteRow;
+use sqlx::Row;
 use std::cmp::Ordering;
 use std::fmt;
 
 pub mod amount;
-pub mod invoice_parser;
 pub mod invoice_type;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Invoice {
-    date: NaiveDate,
-    amount: Amount,
-    base_amount: Option<Amount>,
-    invoice_type: InvoiceType,
-    note: Option<String>,
+    pub date: NaiveDate,
+    pub amount: Amount,
+    pub base_amount: Option<Amount>,
+    pub invoice_type: InvoiceType,
+    pub note: Option<String>,
 }
 
 impl Invoice {
@@ -111,4 +113,19 @@ pub fn contains_invoice_in_currency(invoices: &[Invoice], currency: &Currency) -
     invoices
         .iter()
         .any(|invoice| invoice.amount_ref().currency_ref() == currency)
+}
+
+impl FromRow<'_, SqliteRow> for Invoice {
+    fn from_row(row: &SqliteRow) -> sqlx::Result<Self> {
+        let currency: Currency = row.try_get("currency")?;
+        let amount = Amount::new(row.try_get("amount")?, currency);
+
+        Ok(Self {
+            date: row.try_get("date")?,
+            amount,
+            base_amount: None,
+            invoice_type: row.try_get("type")?,
+            note: row.try_get("note")?,
+        })
+    }
 }

@@ -1,12 +1,14 @@
 use crate::currency::Currency;
 use crate::error::Error;
-use crate::file::LineParts;
 use crate::invoice::amount::Amount;
 use crate::invoice::invoice_type::InvoiceType;
 use crate::invoice::Invoice;
+use crate::markdown::file_reader::LineParts;
 use chrono::NaiveDate;
 use std::cmp::Ordering;
+use std::str::FromStr;
 
+#[derive(Debug)]
 pub struct ParserResult {
     pub invoices: Vec<Invoice>,
     pub errors: Vec<Error>,
@@ -29,11 +31,11 @@ impl InvoiceParser {
             }
         }
         invoices.sort_by(|a, b| {
-            if a.date > b.date {
+            if a.date() > b.date() {
                 Ordering::Greater
-            } else if a.date < b.date {
+            } else if a.date() < b.date() {
                 Ordering::Less
-            } else if a.amount.value() > b.amount.value() {
+            } else if a.amount().value() > b.amount().value() {
                 Ordering::Greater
             } else {
                 Ordering::Less
@@ -49,8 +51,8 @@ impl InvoiceParser {
         let date = self.parse_date(&string_vec)?;
         let raw_currency =
             self.get_vec_part_or_error(&string_vec, 1, "Could not read currency from line")?;
-        let currency = Currency::from_string(&raw_currency)?;
-        let amount = Amount::new(self.parse_amount(&string_vec)?, &currency);
+        let currency = Currency::from_str(&raw_currency)?;
+        let amount = Amount::new(self.parse_amount(&string_vec)?, currency);
 
         let invoice_type = InvoiceType::from_str(string_vec.get(3).unwrap_or(&"".to_string()));
         let note = self.get_vec_part(&string_vec, 4);
@@ -117,11 +119,11 @@ mod tests {
             invoice_parser.build_from_vec(vec!["15.02.2019", "€", "66.60", "T", "Gas station"]);
         match result {
             Ok(i) => {
-                assert_eq!(i.invoice_type, InvoiceType::Gas);
-                assert_eq!(i.amount, Amount::new(66.6, &Currency::eur()));
-                assert_eq!(i.date, NaiveDate::from_ymd_opt(2019, 2, 15).unwrap());
-                assert!(i.note.is_some());
-                assert_eq!(i.note.unwrap(), "Gas station");
+                assert_eq!(i.invoice_type(), InvoiceType::Gas);
+                assert_eq!(i.amount(), Amount::new(66.6, Currency::eur()));
+                assert_eq!(i.date(), NaiveDate::from_ymd_opt(2019, 2, 15).unwrap());
+                assert!(i.note().is_some());
+                assert_eq!(i.note().unwrap(), "Gas station");
             }
             Err(e) => panic!("{}", e),
         };

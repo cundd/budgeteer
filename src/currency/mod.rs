@@ -1,9 +1,13 @@
-use std::fmt;
-
 use crate::error::Error;
-use crate::error::Res;
+use sqlx::sqlite::SqliteTypeInfo;
+use sqlx::{Database, Decode, Sqlite, Type};
+use std::fmt;
+use std::str::FromStr;
 
+pub mod amount_converter;
 pub mod currency_data;
+pub mod exchange_rate;
+pub mod exchange_rate_provider;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Currency {
@@ -19,6 +23,11 @@ impl Currency {
         }
     }
 
+    /// Return the systems current base amount
+    pub fn base() -> Self {
+        Self::eur()
+    }
+
     pub fn eur() -> Self {
         Currency::new("EUR", "€")
     }
@@ -30,8 +39,12 @@ impl Currency {
     pub fn usd() -> Self {
         Currency::new("USD", "$")
     }
+}
 
-    pub fn from_string(input: &str) -> Res<Self> {
+impl FromStr for Currency {
+    type Err = Error;
+
+    fn from_str(input: &str) -> Result<Self, Self::Err> {
         let all_currencies = currency_data::all();
         match all_currencies.get(input) {
             Some(c) => Ok(c.clone()),
@@ -46,5 +59,36 @@ impl Currency {
 impl fmt::Display for Currency {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.write_str(&self.symbol)
+    }
+}
+
+impl Type<Sqlite> for Currency {
+    fn type_info() -> SqliteTypeInfo {
+        <str as Type<Sqlite>>::type_info()
+    }
+}
+
+// DB is the database driver
+// `'r` is the lifetime of the `Row` being decoded
+impl<'r, DB: Database> Decode<'r, DB> for Currency
+where
+    // we want to delegate some of the work to string decoding so let's make sure strings
+    // are supported by the database
+    &'r str: Decode<'r, DB>,
+{
+    fn decode(
+        value: <DB as Database>::ValueRef<'r>,
+    ) -> Result<Currency, Box<dyn std::error::Error + 'static + Send + Sync>> {
+        // the interface of ValueRef is largely unstable at the moment
+        // so this is not directly implementable
+
+        // however, you can delegate to a type that matches the format of the type you want
+        // to decode (such as a UTF-8 string)
+
+        let value = <&str as Decode<DB>>::decode(value)?;
+
+        // now you can parse this into your type (assuming there is a `FromStr`)
+
+        Ok(value.parse()?)
     }
 }

@@ -1,6 +1,4 @@
-use core::panic;
-
-#[derive(PartialOrd, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialOrd, PartialEq)]
 pub enum Verbosity {
     Normal = 0,
     Info = 1,
