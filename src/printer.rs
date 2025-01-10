@@ -53,7 +53,7 @@ impl Printer {
             print_styled_for_type(
                 invoice_type,
                 format!(
-                    "{:width$}: {:<4} {: >8.2}  ",
+                    "{:width$}│ {:<4} {: >9.2}",
                     format!("{}", invoice_type),
                     base_currency.symbol,
                     sum,
