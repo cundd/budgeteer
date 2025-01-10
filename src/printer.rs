@@ -116,7 +116,11 @@ impl Printer {
         // Use `InvoiceType::all()` again, to maintain the sorting
         for invoice_type in InvoiceType::all() {
             let sum = sum_map[&invoice_type];
-            let percent = 100.0 * sum / total;
+            let percent = if total > 0.0 {
+                100.0 * sum / total
+            } else {
+                0.0
+            };
 
             let width = (percent.ceil() / 2.0) as usize;
             let text = format!("{}: {:.2}%", invoice_type, percent);
