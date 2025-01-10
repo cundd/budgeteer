@@ -4,35 +4,48 @@ use crate::filter::Request;
 use crate::invoice::invoice_type::InvoiceType;
 use crate::invoice::{contains_invoice_in_currency, Invoice};
 use crate::month::Month;
-use ansi_term::Colour::RGB;
-use ansi_term::{Colour, Style};
+use crossterm::style::Color;
+use crossterm::style::Stylize;
 use std::collections::HashMap;
 use std::env;
+use std::io::{stdout, Write};
+
+static STDOUT_WRITE_ERROR: &str = "Could not write to stdout";
 
 pub trait PrinterTrait {
-    fn print_invoices(&self, base_currency: &Currency, invoices: &[Invoice]) {
+    fn print_invoices(&mut self, base_currency: &Currency, invoices: &[Invoice]) {
         for invoice in invoices {
             self.print_invoice(base_currency, invoice)
         }
-        println!()
+        self.print_newline()
     }
 
-    fn print_invoice(&self, base_currency: &Currency, invoice: &Invoice);
+    fn print_invoice(&mut self, base_currency: &Currency, invoice: &Invoice);
 
-    fn print_filter_request(&self, filter_request: &Request);
+    fn print_filter_request(&mut self, filter_request: &Request);
 
-    fn print_sum(&self, base_currency: &Currency, invoices: &[Invoice]);
-    fn print_month_sum(&self, month: Month, base_currency: &Currency, invoices: &[Invoice]);
+    fn print_sum(&mut self, base_currency: &Currency, invoices: &[Invoice]);
+    fn print_month_sum(&mut self, month: Month, base_currency: &Currency, invoices: &[Invoice]);
+    fn print_newline(&mut self);
 }
 
-pub struct Printer {}
+pub struct Printer {
+    output: std::io::Stdout,
+}
 
 impl Printer {
     pub fn new() -> Self {
-        Printer {}
+        Printer { output: stdout() }
     }
 
-    fn print_type_sum(&self, base_currency: &Currency, invoices: &[Invoice]) {
+    fn print<S: AsRef<str>>(&mut self, text: S) {
+        write!(self.output, "{}", text.as_ref()).expect(STDOUT_WRITE_ERROR)
+    }
+
+    fn println<S: AsRef<str>>(&mut self, text: S) {
+        writeln!(self.output, "{}", text.as_ref()).expect(STDOUT_WRITE_ERROR)
+    }
+    fn print_type_sum(&mut self, base_currency: &Currency, invoices: &[Invoice]) {
         // Skip currencies without any Invoice
         let currencies_to_output: Vec<Currency> = currency_data::all()
             .into_iter()
@@ -50,7 +63,7 @@ impl Printer {
         for invoice_type in InvoiceType::all() {
             let sum = Calculator::sum_for_type(invoices, invoice_type);
 
-            print_styled_for_type(
+            self.print(style_for_type(
                 invoice_type,
                 format!(
                     "{:width$}│ {:<4} {: >9.2}",
@@ -62,36 +75,36 @@ impl Printer {
                 false,
                 true,
                 true,
-            );
+            ));
 
             for currency in &currencies_to_output {
                 let sum = Calculator::sum_for_type_and_currency(invoices, invoice_type, currency);
-                print_styled_for_type(
+                self.print(style_for_type(
                     invoice_type,
-                    format!(" | {:<4} {: >8.2}", currency.symbol, sum,),
+                    format!("│ {:<2} {: >8.2}", currency.symbol, sum),
                     false,
                     true,
                     true,
-                );
+                ));
             }
 
-            print_styled_for_type(
+            self.print(style_for_type(
                 invoice_type,
                 invoice_type.identifier().to_string(),
                 true,
                 true,
                 true,
-            );
-            println!()
+            ));
+            self.print_newline();
         }
 
-        println!();
-        println!("Chart");
+        self.print_newline();
+        self.println(style_header(format!("{:<50}", "Chart")));
         self.print_bar_chart(base_currency, invoices);
     }
 
     /// Print the "bar chart"
-    fn print_bar_chart(&self, _base_currency: &Currency, invoices: &[Invoice]) {
+    fn print_bar_chart(&mut self, _base_currency: &Currency, invoices: &[Invoice]) {
         let mut sum_map = HashMap::new();
         for invoice_type in InvoiceType::all() {
             let sum = Calculator::sum_for_type(invoices, invoice_type);
@@ -99,53 +112,66 @@ impl Printer {
         }
 
         let total: f64 = Calculator::sum(invoices);
+
         // Use `InvoiceType::all()` again, to maintain the sorting
         for invoice_type in InvoiceType::all() {
             let sum = sum_map[&invoice_type];
             let percent = 100.0 * sum / total;
 
-            let width = percent.ceil() as usize;
-            let text = format!(" {}: {:.2}%", invoice_type, percent);
+            let width = (percent.ceil() / 2.0) as usize;
+            let text = format!("{}: {:.2}%", invoice_type, percent);
             if text.len() <= width {
-                print_styled_for_type(
+                self.print(style_for_type(
                     invoice_type,
-                    format!("{:<width$}", text),
+                    format!(" {:<width$}", text),
                     false,
                     true,
                     false,
-                );
+                ));
             } else {
-                print_styled_for_type(invoice_type, &text[..width], false, true, false);
-                print!("{}", &text[width..]);
+                self.print(style_for_type(
+                    invoice_type,
+                    format!(" {}", &text[..width]),
+                    false,
+                    true,
+                    false,
+                ));
+                write!(self.output, "{}", &text[width..]).expect(STDOUT_WRITE_ERROR);
             }
 
-            println!()
+            self.print_newline();
         }
     }
 
-    fn print_type_sum_header(&self, currencies_to_output: &[Currency]) {
-        print_styled_header(format!(
-            "{:width$}: {}",
+    fn print_type_sum_header(&mut self, currencies_to_output: &[Currency]) {
+        self.print(style_header(format!(
+            "{:width$}│ {}",
             "Typ",
             "∑ Basis Währung",
             width = 22
-        ));
+        )));
 
         for currency in currencies_to_output {
-            print_styled_header(format!(" | ∑ {:<4}       ", currency.symbol));
+            self.print(style_header(format!("│ ∑ {:<5}     ", currency.symbol)));
         }
 
-        print_styled_header(" ");
-        println!()
+        self.print(style_header("   "));
+        self.print_newline();
     }
 
-    fn print_grand_total(&self, base_currency: &Currency, invoices: &[Invoice]) {
-        println!("TOTAL: {} {:.2}", base_currency, Calculator::sum(invoices));
+    fn print_grand_total(&mut self, base_currency: &Currency, invoices: &[Invoice]) {
+        writeln!(
+            self.output,
+            "TOTAL: {} {:.2}",
+            base_currency,
+            Calculator::sum(invoices)
+        )
+        .expect(STDOUT_WRITE_ERROR);
     }
 }
 
 impl PrinterTrait for Printer {
-    fn print_invoice(&self, base_currency: &Currency, invoice: &Invoice) {
+    fn print_invoice(&mut self, base_currency: &Currency, invoice: &Invoice) {
         let note = get_prepared_note(invoice);
 
         let amount_string = if &invoice.amount().currency() != base_currency {
@@ -160,51 +186,43 @@ impl PrinterTrait for Printer {
         let invoice_type = invoice.invoice_type();
         let date = invoice.date().format("%A %d.%m.%Y");
 
-        if has_true_color_support() {
-            println!(
-                r#"
+        writeln!(
+            self.output,
+            r#"
 { } Datum   : {}
 Betrag      : {}
 Typ         : {}
 Notiz       : {}"#,
-                style_for_type(invoice_type, " ", false, true, true),
-                date,
-                amount_string,
-                invoice_type,
-                note,
-            );
-        } else {
-            println!(
-                r#"
-Datum       : {}
-Betrag      : {}
-Typ         : {}
-Notiz       : {}"#,
-                date, amount_string, invoice_type, note,
-            );
-        }
+            style_for_type(invoice_type, " ", false, true, true),
+            date,
+            amount_string,
+            invoice_type,
+            note,
+        )
+        .expect(STDOUT_WRITE_ERROR);
     }
 
-    fn print_filter_request(&self, filter_request: &Request) {
-        println!("Filter:");
+    fn print_filter_request(&mut self, filter_request: &Request) {
+        self.println("Filter:");
         if filter_request.empty() {
-            println!("Keine");
+            self.println("Keine");
         } else {
-            println!("{}", filter_request);
+            self.println(filter_request.to_string());
         }
-        println!();
+        self.print_newline();
     }
 
-    fn print_sum(&self, base_currency: &Currency, invoices: &[Invoice]) {
+    fn print_sum(&mut self, base_currency: &Currency, invoices: &[Invoice]) {
         self.print_type_sum(base_currency, invoices);
-        println!("-----------------------------------------");
+        self.println("-----------------------------------------");
         self.print_grand_total(base_currency, invoices);
     }
 
-    fn print_month_sum(&self, month: Month, base_currency: &Currency, invoices: &[Invoice]) {
+    fn print_month_sum(&mut self, month: Month, base_currency: &Currency, invoices: &[Invoice]) {
         if !invoices.is_empty() {
             if let Some(max_type) = Calculator::major_type(invoices) {
-                println!(
+                writeln!(
+                    self.output,
                     "{:width$}: {} {: >8.2} {}",
                     format!("{}", month),
                     base_currency,
@@ -217,18 +235,25 @@ Notiz       : {}"#,
                         true
                     ),
                     width = 12
-                );
+                )
+                .expect(STDOUT_WRITE_ERROR);
                 return;
             }
         }
 
-        println!(
+        writeln!(
+            self.output,
             "{:width$}: {} {: >8.2}",
             format!("{}", month),
             base_currency,
             0,
             width = 12
         )
+        .expect(STDOUT_WRITE_ERROR);
+    }
+
+    fn print_newline(&mut self) {
+        self.println("")
     }
 }
 
@@ -239,10 +264,6 @@ fn style_for_type<T: AsRef<str>>(
     bg: bool,
     add_space: bool,
 ) -> String {
-    if !has_true_color_support() {
-        return text.as_ref().to_owned();
-    }
-
     let prepared_multi_line = text
         .as_ref()
         .lines()
@@ -262,40 +283,25 @@ fn style_for_type<T: AsRef<str>>(
         return prepared_multi_line;
     }
 
-    let style = if fg && bg {
-        Style::new()
-            .fg(color_for_type(invoice_type, false))
+    if fg && bg {
+        prepared_multi_line
+            .with(color_for_type(invoice_type, false))
             .on(color_for_type(invoice_type, true))
     } else if fg {
-        Style::new().fg(color_for_type(invoice_type, false))
+        prepared_multi_line.with(color_for_type(invoice_type, false))
     } else {
-        Style::new().on(color_for_type(invoice_type, true))
-    };
-
-    style.paint(prepared_multi_line).to_string()
-}
-
-fn print_styled_for_type<T: AsRef<str>>(
-    invoice_type: InvoiceType,
-    text: T,
-    fg: bool,
-    bg: bool,
-    add_space: bool,
-) {
-    print!("{}", style_for_type(invoice_type, text, fg, bg, add_space))
+        prepared_multi_line.on(color_for_type(invoice_type, true))
+    }
+    .to_string()
 }
 
 fn style_header<T: AsRef<str>>(text: T) -> String {
-    if !has_true_color_support() {
-        return text.as_ref().to_owned();
-    }
-
     let prepared_multi_line = text
         .as_ref()
         .lines()
         .map(|l| {
             if !l.is_empty() {
-                format!(" {} ", l)
+                format!(" {}", l)
             } else {
                 "".to_owned()
             }
@@ -303,41 +309,135 @@ fn style_header<T: AsRef<str>>(text: T) -> String {
         .collect::<Vec<String>>()
         .join("\n");
 
-    Style::new()
-        .fg(Colour::White)
-        .on(Colour::Black)
-        .paint(prepared_multi_line)
+    prepared_multi_line
+        .with(Color::White)
+        .on(Color::Black)
         .to_string()
 }
 
-fn print_styled_header<T: AsRef<str>>(text: T) {
-    print!("{}", style_header(text))
-}
-
-fn color_for_type(invoice_type: InvoiceType, light: bool) -> Colour {
+fn color_for_type(invoice_type: InvoiceType, light: bool) -> Color {
+    if !has_true_color_support() {
+        return if light {
+            match invoice_type {
+                InvoiceType::Car => Color::AnsiValue(9),
+                InvoiceType::Clothes => Color::AnsiValue(10),
+                InvoiceType::Eat => Color::AnsiValue(11),
+                InvoiceType::Gas => Color::AnsiValue(12),
+                InvoiceType::Fun => Color::AnsiValue(13),
+                InvoiceType::Health => Color::AnsiValue(14),
+                InvoiceType::Home => Color::AnsiValue(73),
+                InvoiceType::Telecommunication => Color::AnsiValue(27),
+                InvoiceType::Unknown => Color::AnsiValue(57),
+            }
+        } else {
+            match invoice_type {
+                InvoiceType::Car => Color::AnsiValue(1),
+                InvoiceType::Clothes => Color::AnsiValue(2),
+                InvoiceType::Eat => Color::AnsiValue(3),
+                InvoiceType::Gas => Color::AnsiValue(4),
+                InvoiceType::Fun => Color::AnsiValue(5),
+                InvoiceType::Health => Color::AnsiValue(6),
+                InvoiceType::Home => Color::AnsiValue(17),
+                InvoiceType::Telecommunication => Color::AnsiValue(17),
+                InvoiceType::Unknown => Color::AnsiValue(53),
+            }
+        };
+    }
     if light {
         match invoice_type {
-            InvoiceType::Car => RGB(112, 255, 81),
-            InvoiceType::Clothes => RGB(177, 255, 79),
-            InvoiceType::Eat => RGB(225, 255, 79),
-            InvoiceType::Fun => RGB(255, 237, 61),
-            InvoiceType::Gas => RGB(255, 200, 53),
-            InvoiceType::Health => RGB(255, 173, 45),
-            InvoiceType::Home => RGB(255, 136, 126),
-            InvoiceType::Telecommunication => RGB(255, 120, 186),
-            InvoiceType::Unknown => RGB(215, 151, 255),
+            InvoiceType::Car => Color::Rgb {
+                r: 112,
+                g: 255,
+                b: 81,
+            },
+            InvoiceType::Clothes => Color::Rgb {
+                r: 177,
+                g: 255,
+                b: 79,
+            },
+            InvoiceType::Eat => Color::Rgb {
+                r: 225,
+                g: 255,
+                b: 79,
+            },
+            InvoiceType::Gas => Color::Rgb {
+                r: 255,
+                g: 237,
+                b: 61,
+            },
+            InvoiceType::Fun => Color::Rgb {
+                r: 255,
+                g: 200,
+                b: 53,
+            },
+            InvoiceType::Health => Color::Rgb {
+                r: 255,
+                g: 173,
+                b: 45,
+            },
+            InvoiceType::Home => Color::Rgb {
+                r: 255,
+                g: 136,
+                b: 126,
+            },
+            InvoiceType::Telecommunication => Color::Rgb {
+                r: 255,
+                g: 120,
+                b: 186,
+            },
+            InvoiceType::Unknown => Color::Rgb {
+                r: 215,
+                g: 151,
+                b: 255,
+            },
         }
     } else {
         match invoice_type {
-            InvoiceType::Car => RGB(84, 189, 60),
-            InvoiceType::Clothes => RGB(132, 189, 58),
-            InvoiceType::Eat => RGB(167, 189, 58),
-            InvoiceType::Fun => RGB(189, 174, 45),
-            InvoiceType::Gas => RGB(189, 146, 40),
-            InvoiceType::Health => RGB(189, 127, 34),
-            InvoiceType::Home => RGB(189, 101, 94),
-            InvoiceType::Telecommunication => RGB(189, 91, 140),
-            InvoiceType::Unknown => RGB(159, 113, 189),
+            InvoiceType::Car => Color::Rgb {
+                r: 84,
+                g: 189,
+                b: 60,
+            },
+            InvoiceType::Clothes => Color::Rgb {
+                r: 132,
+                g: 189,
+                b: 58,
+            },
+            InvoiceType::Eat => Color::Rgb {
+                r: 167,
+                g: 189,
+                b: 58,
+            },
+            InvoiceType::Gas => Color::Rgb {
+                r: 189,
+                g: 174,
+                b: 45,
+            },
+            InvoiceType::Fun => Color::Rgb {
+                r: 189,
+                g: 146,
+                b: 40,
+            },
+            InvoiceType::Health => Color::Rgb {
+                r: 189,
+                g: 127,
+                b: 34,
+            },
+            InvoiceType::Home => Color::Rgb {
+                r: 189,
+                g: 101,
+                b: 94,
+            },
+            InvoiceType::Telecommunication => Color::Rgb {
+                r: 189,
+                g: 91,
+                b: 140,
+            },
+            InvoiceType::Unknown => Color::Rgb {
+                r: 159,
+                g: 113,
+                b: 189,
+            },
         }
     }
 }

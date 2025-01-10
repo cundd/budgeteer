@@ -5,9 +5,9 @@ authors = ["Daniel Corn <info@corn.rest>"]
 edition = "2021"
 
 [dependencies]
-ansi_term = "0.12.1"
 chrono = { version = ">=0.4.20", features = ["serde"] }
 clap = { version = "4.5.23", features = ["derive"] }
+crossterm = "0.28.1"
 dialoguer = { version = "^0.11.0", features = ["completion"] }
 lazy_static = "1.4.0"
 reqwest = "^0.11.2"

@@ -46,7 +46,7 @@ impl Wizard {
 
     pub async fn run(
         &self,
-        printer: &Printer,
+        printer: &mut Printer,
         base_currency: &Currency,
         repository: &InvoiceRepository,
         invoices: &[Invoice],

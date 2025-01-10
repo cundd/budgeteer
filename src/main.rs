@@ -97,7 +97,7 @@ enum Commands {
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cli = Cli::parse();
-    let printer = Printer::new();
+    let mut printer = Printer::new();
     let base_currency = Currency::base();
 
     match &cli.command {
@@ -121,7 +121,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             let invoices_to_print = load_and_display_invoices(
                 &repository,
-                &printer,
+                &mut printer,
                 &base_currency,
                 Some(&filter_request),
             )
@@ -132,7 +132,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 for month in 1..13 {
                     filter_and_print_month_sum(
                         &filter_request,
-                        &printer,
+                        &mut printer,
                         &base_currency,
                         &invoices_to_print,
                         month,
@@ -220,7 +220,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             let wiz = Wizard::new();
 
             return Ok(wiz
-                .run(&printer, &base_currency, &repository, &invoices_to_print)
+                .run(
+                    &mut printer,
+                    &base_currency,
+                    &repository,
+                    &invoices_to_print,
+                )
                 .await?);
         }
         Some(Commands::ShowTypes {}) => show_types(),
@@ -246,7 +251,7 @@ fn year_argument_parser(input: &str) -> Result<i32, String> {
 
 async fn load_and_display_invoices(
     repository: &InvoiceRepository,
-    printer: &Printer,
+    printer: &mut Printer,
     base_currency: &Currency,
     filter_request: Option<&Request>,
 ) -> Res<Vec<Invoice>> {
@@ -259,7 +264,7 @@ async fn load_and_display_invoices(
 
 fn filter_and_print_month_sum(
     filter_request: &Request,
-    printer: &Printer,
+    printer: &mut Printer,
     base_currency: &Currency,
     all_invoices: &[Invoice],
     month: u32,
