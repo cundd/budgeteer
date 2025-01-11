@@ -125,13 +125,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 printer.print_filter_request(&filter_request);
             }
 
-            let invoices_to_print = load_and_display_invoices(
-                &repository,
-                &mut printer,
-                &base_currency,
-                Some(&filter_request),
-            )
-            .await?;
+            let invoices_to_print = get_invoices(&repository, Some(&filter_request)).await?;
+            printer.print_invoices(&base_currency, &invoices_to_print);
 
             for month in 1..13 {
                 filter_and_print_month_sum(&mut printer, &base_currency, &invoices_to_print, month);
@@ -226,33 +221,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     Ok(())
-}
-
-// fn year_argument_parser(input: &str) -> Result<i32, String> {
-//     if input == "now" {
-//         return Ok(Local::now().year());
-//     }
-//
-//     // if input == "all" {
-//     //     return Ok(None);
-//     // }
-//
-//     input
-//         .parse::<i32>()
-//         .map_err(|_| format!("`{input}` isn't a valid year"))
-// }
-
-async fn load_and_display_invoices(
-    repository: &InvoiceRepository,
-    printer: &mut Printer,
-    base_currency: &Currency,
-    filter_request: Option<&Request>,
-) -> Res<Vec<Invoice>> {
-    let invoices_to_print = get_invoices(repository, filter_request).await?;
-
-    printer.print_invoices(base_currency, &invoices_to_print);
-
-    Ok(invoices_to_print)
 }
 
 fn filter_and_print_month_sum(
