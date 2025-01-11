@@ -7,7 +7,7 @@ use crate::invoice::Invoice;
 use crate::printer::{Printer, PrinterTrait};
 use crate::verbosity::Verbosity;
 use crate::wizard::Wizard;
-use chrono::{Datelike, Local};
+use chrono::Datelike;
 use clap::{arg, command, Parser, Subcommand};
 use persistence::InvoiceRepository;
 use std::path::PathBuf;
@@ -42,17 +42,13 @@ enum Commands {
         #[arg(value_name = "FILE")]
         input: PathBuf,
 
-        /// Filter by year (default is the current year)
-        #[arg(short, long, default_value = "now", value_parser = year_argument_parser)]
-        year: Option<i32>,
-
-        /// Filter by month
+        /// Show entries from this date
         #[arg(short, long)]
-        month: Option<u32>,
+        from: Option<String>,
 
-        /// Filter by day
-        #[arg(short, long)]
-        day: Option<u32>,
+        /// Show entries up to and including this date
+        #[arg(short('x'), long)]
+        to: Option<String>,
 
         /// Filter by type
         #[arg(short, long)]
@@ -103,16 +99,26 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     match &cli.command {
         Some(Commands::Analyze {
             input,
-            year,
-            month,
-            day,
+            from,
+            to,
             r#type,
             verbosity,
         }) => {
             let input_file = normalize_file_path(input)?;
             let repository = InvoiceRepository::new(&input_file).await?;
 
-            let filter_request = Request::new(*year, *month, *day, *r#type);
+            let from = if let Some(from) = from {
+                Some(Request::parse_from_date(from)?)
+            } else {
+                None
+            };
+            let to = if let Some(to) = to {
+                Some(Request::parse_to_date(to)?)
+            } else {
+                None
+            };
+
+            let filter_request = Request::new(from, to, *r#type);
             let verbosity = Verbosity::from_int(*verbosity);
 
             if verbosity >= Verbosity::Info {
@@ -127,25 +133,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             )
             .await?;
 
-            // Print an overview of the months, if there is **no** filter for the month
-            if filter_request.month().is_none() {
-                for month in 1..13 {
-                    filter_and_print_month_sum(
-                        &filter_request,
-                        &mut printer,
-                        &base_currency,
-                        &invoices_to_print,
-                        month,
-                    );
-                }
-                println!()
+            for month in 1..13 {
+                filter_and_print_month_sum(&mut printer, &base_currency, &invoices_to_print, month);
             }
 
+            printer.print_newline();
             printer.print_sum(&base_currency, &invoices_to_print);
-            if filter_request.year().is_none() {
-                println!();
-                println!("⚠︎ Achtung: Die Werte der Basis Währung können nicht korrekt berechnet werden wenn mehr als 365 Tage ausgegeben werden")
-            }
         }
 
         Some(Commands::Import {
@@ -235,19 +228,19 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-fn year_argument_parser(input: &str) -> Result<i32, String> {
-    if input == "now" {
-        return Ok(Local::now().year());
-    }
-
-    // if input == "all" {
-    //     return Ok(None);
-    // }
-
-    input
-        .parse::<i32>()
-        .map_err(|_| format!("`{input}` isn't a valid year"))
-}
+// fn year_argument_parser(input: &str) -> Result<i32, String> {
+//     if input == "now" {
+//         return Ok(Local::now().year());
+//     }
+//
+//     // if input == "all" {
+//     //     return Ok(None);
+//     // }
+//
+//     input
+//         .parse::<i32>()
+//         .map_err(|_| format!("`{input}` isn't a valid year"))
+// }
 
 async fn load_and_display_invoices(
     repository: &InvoiceRepository,
@@ -263,14 +256,16 @@ async fn load_and_display_invoices(
 }
 
 fn filter_and_print_month_sum(
-    filter_request: &Request,
     printer: &mut Printer,
     base_currency: &Currency,
     all_invoices: &[Invoice],
     month: u32,
 ) {
-    let filter_request_for_month = filter_request.with_month(month);
-    let invoices = Filter::filter(all_invoices, &filter_request_for_month);
+    let invoices: Vec<Invoice> = all_invoices
+        .iter()
+        .filter(|i| i.date.month() == month)
+        .map(Clone::clone)
+        .collect();
     printer.print_month_sum(month.into(), base_currency, &invoices);
 }
 

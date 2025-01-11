@@ -7,6 +7,7 @@ pub type Res<T, E = Error> = ::std::result::Result<T, E>;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Error {
+    Argument(String),
     FileIO(String),
     Parse(String),
     Rate(String),
@@ -21,6 +22,7 @@ pub enum Error {
 impl Error {
     fn description(&self) -> &str {
         match *self {
+            Error::Argument(_) => "Argument error",
             Error::FileIO(_) => "File IO error",
             Error::Parse(_) => "Parse Error",
             Error::General(_) => "General Error",
@@ -43,6 +45,7 @@ impl Error {
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
+            Error::Argument(ref s) => write!(f, "{}: {}", self.description(), s),
             Error::FileIO(ref s) => write!(f, "{}: {}", self.description(), s),
             Error::LineComment => write!(f, "{}", self.description()),
             Error::LineEmpty => write!(f, "{}", self.description()),

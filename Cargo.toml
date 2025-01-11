@@ -10,6 +10,7 @@ clap = { version = "4.5.23", features = ["derive"] }
 crossterm = "0.28.1"
 dialoguer = { version = "^0.11.0", features = ["completion"] }
 lazy_static = "1.4.0"
+regex = "1.11.1"
 reqwest = "^0.11.2"
 serde = { version = "1.0", features = ["derive"] } 
 serde_json = "1.0"

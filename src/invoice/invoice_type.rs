@@ -75,11 +75,9 @@ impl InvoiceType {
             InvoiceType::Unknown,
         ]
     }
-}
 
-impl fmt::Display for InvoiceType {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let description = match *self {
+    pub fn to_str(self) -> &'static str {
+        match self {
             InvoiceType::Car => "Car / Auto",
             InvoiceType::Clothes => "Clothes / Kleidung",
             InvoiceType::Eat => "Food / Essen",
@@ -89,9 +87,13 @@ impl fmt::Display for InvoiceType {
             InvoiceType::Home => "Home / Hause",
             InvoiceType::Telecommunication => "Internet / Handy / TV",
             InvoiceType::Unknown => "Diverse",
-        };
+        }
+    }
+}
 
-        f.write_str(description)
+impl fmt::Display for InvoiceType {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.write_str(self.to_str())
     }
 }
 
