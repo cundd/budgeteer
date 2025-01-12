@@ -1,7 +1,6 @@
 use crate::currency::Currency;
-use crate::error::{Error, Res};
 use crate::file::normalize_file_path;
-use crate::filter::{Filter, Request};
+use crate::filter::Request;
 use crate::invoice::invoice_type::InvoiceType;
 use crate::invoice::Invoice;
 use crate::printer::{Printer, PrinterTrait};
@@ -125,7 +124,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 printer.print_filter_request(&filter_request);
             }
 
-            let invoices_to_print = get_invoices(&repository, Some(&filter_request)).await?;
+            let invoices_to_print = repository.fetch_with_request(filter_request).await?;
+            // let invoices_to_print = get_invoices(&repository, Some(&filter_request)).await?;
             printer.print_invoices(&base_currency, &invoices_to_print);
 
             for month in 1..13 {
@@ -198,8 +198,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             let output_file = normalize_file_path(output)?;
             let repository = InvoiceRepository::new(&output_file).await?;
 
-            let invoices_to_print = get_invoices(&repository, None).await?;
-
+            let invoices_to_print = repository.fetch_all().await?;
             if !invoices_to_print.is_empty() {
                 println!("The output file contains these invoices:");
                 printer.print_invoices(&base_currency, &invoices_to_print);
@@ -235,18 +234,6 @@ fn filter_and_print_month_sum(
         .map(Clone::clone)
         .collect();
     printer.print_month_sum(month.into(), base_currency, &invoices);
-}
-
-async fn get_invoices(
-    repository: &InvoiceRepository,
-    filter_request: Option<&Request>,
-) -> Result<Vec<Invoice>, Error> {
-    let all_invoices = repository.fetch_all().await?;
-
-    Ok(match filter_request {
-        Some(filter) if !filter.empty() => Filter::filter(&all_invoices, filter_request.unwrap()),
-        _ => all_invoices,
-    })
 }
 
 fn show_types() {

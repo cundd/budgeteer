@@ -4,8 +4,10 @@ use crate::{
         amount_converter::AmountConverter, exchange_rate_provider::ExchangeRateProvider, Currency,
     },
     error::Error,
+    filter::Request,
     invoice::Invoice,
 };
+use chrono::NaiveDate;
 use std::path::Path;
 
 pub struct InvoiceRepository {
@@ -33,7 +35,7 @@ impl InvoiceRepository {
         let invoice_type = invoice.invoice_type();
         let note = invoice.note();
 
-        // Insert the task, then obtain the ID of this row
+        // Insert the spending, then obtain the ID of this row
         let id = sqlx::query!(
             r#"
 INSERT INTO spendings ( date, currency, amount, type, note )
@@ -56,6 +58,28 @@ VALUES ( ?1, ?2, ?3, ?4, ?5 )
         let spendings: Vec<Invoice> = sqlx::query_as(r#"SELECT * FROM spendings;"#)
             .fetch_all(&self.database.pool)
             .await?;
+
+        Ok(spendings
+            .into_iter()
+            .map(|i| self.prepare_base_amount(i))
+            .collect())
+    }
+
+    pub async fn fetch_with_request(&self, filter_request: Request) -> Result<Vec<Invoice>, Error> {
+        let query = if let Some(invoice_type) = filter_request.invoice_type {
+            sqlx::query_as(
+                r#"SELECT * FROM spendings WHERE (date > ? AND date <= ?) AND type = ?;"#,
+            )
+            .bind(filter_request.from.unwrap_or(NaiveDate::MIN))
+            .bind(filter_request.to.unwrap_or(NaiveDate::MAX))
+            .bind(invoice_type)
+        } else {
+            sqlx::query_as(r#"SELECT * FROM spendings WHERE (date > ? AND date <= ?)"#)
+                .bind(filter_request.from.unwrap_or(NaiveDate::MIN))
+                .bind(filter_request.to.unwrap_or(NaiveDate::MAX))
+        };
+
+        let spendings: Vec<Invoice> = query.fetch_all(&self.database.pool).await?;
 
         Ok(spendings
             .into_iter()
