@@ -38,7 +38,7 @@ impl InvoiceRepository {
         // Insert the spending, then obtain the ID of this row
         let id = sqlx::query!(
             r#"
-INSERT INTO spendings ( date, currency, amount, type, note )
+INSERT INTO transactions ( date, currency, amount, type, note )
 VALUES ( ?1, ?2, ?3, ?4, ?5 )
         "#,
             date,
@@ -55,11 +55,11 @@ VALUES ( ?1, ?2, ?3, ?4, ?5 )
     }
 
     pub async fn fetch_all(&self) -> Result<Vec<Invoice>, Error> {
-        let spendings: Vec<Invoice> = sqlx::query_as(r#"SELECT * FROM spendings;"#)
+        let transactions: Vec<Invoice> = sqlx::query_as(r#"SELECT * FROM transactions;"#)
             .fetch_all(&self.database.pool)
             .await?;
 
-        Ok(spendings
+        Ok(transactions
             .into_iter()
             .map(|i| self.prepare_base_amount(i))
             .collect())
@@ -68,20 +68,20 @@ VALUES ( ?1, ?2, ?3, ?4, ?5 )
     pub async fn fetch_with_request(&self, filter_request: Request) -> Result<Vec<Invoice>, Error> {
         let query = if let Some(invoice_type) = filter_request.invoice_type {
             sqlx::query_as(
-                r#"SELECT * FROM spendings WHERE (date > ? AND date <= ?) AND type = ?;"#,
+                r#"SELECT * FROM transactions WHERE (date > ? AND date <= ?) AND type = ?;"#,
             )
             .bind(filter_request.from.unwrap_or(NaiveDate::MIN))
             .bind(filter_request.to.unwrap_or(NaiveDate::MAX))
             .bind(invoice_type)
         } else {
-            sqlx::query_as(r#"SELECT * FROM spendings WHERE (date > ? AND date <= ?)"#)
+            sqlx::query_as(r#"SELECT * FROM transactions WHERE (date > ? AND date <= ?)"#)
                 .bind(filter_request.from.unwrap_or(NaiveDate::MIN))
                 .bind(filter_request.to.unwrap_or(NaiveDate::MAX))
         };
 
-        let spendings: Vec<Invoice> = query.fetch_all(&self.database.pool).await?;
+        let transactions: Vec<Invoice> = query.fetch_all(&self.database.pool).await?;
 
-        Ok(spendings
+        Ok(transactions
             .into_iter()
             .map(|i| self.prepare_base_amount(i))
             .collect())

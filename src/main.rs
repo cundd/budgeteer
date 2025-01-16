@@ -146,7 +146,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             let input_file = normalize_file_path(input)?;
             let output_file = normalize_file_path(output)?;
             let repository = InvoiceRepository::new(&output_file).await?;
-            let current_spendings = repository.fetch_all().await?;
+            let current_transactions = repository.fetch_all().await?;
 
             let result = markdown::get_invoices(input_file)?;
             let invoices = result.invoices;
@@ -162,7 +162,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 if verbosity >= Verbosity::Debug {
                     println!("Try to import invoice: {:#?}", invoice);
                 }
-                let is_already_present = current_spendings.iter().any(|i: &Invoice| {
+                let is_already_present = current_transactions.iter().any(|i: &Invoice| {
                     i.date() == invoice.date()
                         && i.invoice_type() == invoice.invoice_type()
                         && i.amount() == invoice.amount()
