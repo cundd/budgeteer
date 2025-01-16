@@ -116,14 +116,19 @@ impl Printer {
         // Use `InvoiceType::all()` again, to maintain the sorting
         for invoice_type in InvoiceType::all() {
             let sum = sum_map[&invoice_type];
-            let percent = if total > 0.0 {
+            let percent = if total != 0.0 {
                 100.0 * sum / total
             } else {
                 0.0
             };
 
             let width = (percent.ceil() / 2.0) as usize;
-            let text = format!("{}: {:.2}%", invoice_type, percent);
+            let percent_formatted = if percent != 0.0 {
+                format!("{:.2}%", percent)
+            } else {
+                "0%".to_string()
+            };
+            let text = format!("{}: {}", invoice_type, percent_formatted);
             if text.len() <= width {
                 self.print(style_for_type(
                     invoice_type,
@@ -224,25 +229,28 @@ Notiz       : {}"#,
 
     fn print_month_sum(&mut self, month: Month, base_currency: &Currency, invoices: &[Invoice]) {
         if !invoices.is_empty() {
-            if let Some(max_type) = Calculator::major_type(invoices) {
-                writeln!(
-                    self.output,
-                    "{:width$}: {} {: >8.2} {}",
-                    format!("{}", month),
-                    base_currency,
-                    Calculator::sum(invoices),
-                    style_for_type(
-                        max_type,
-                        max_type.identifier().to_string(),
-                        true,
-                        true,
-                        true
+            let major_types = Calculator::major_types(invoices);
+            writeln!(
+                self.output,
+                "{:width$}: {} {: >8.2} {}",
+                format!("{}", month),
+                base_currency,
+                Calculator::sum(invoices),
+                style_for_type(
+                    major_types.max_expenses.invoice_type,
+                    format!(
+                        "{}: {: >8.2}",
+                        major_types.max_expenses.invoice_type.identifier(),
+                        major_types.max_expenses.value
                     ),
-                    width = 12
-                )
-                .expect(STDOUT_WRITE_ERROR);
-                return;
-            }
+                    true,
+                    true,
+                    true
+                ),
+                width = 12
+            )
+            .expect(STDOUT_WRITE_ERROR);
+            return;
         }
 
         writeln!(

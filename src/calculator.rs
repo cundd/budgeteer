@@ -19,49 +19,42 @@ impl Calculator {
         }
     }
 
-    pub fn major_type(invoices: &[Invoice]) -> Option<InvoiceType> {
+    pub fn major_types(invoices: &[Invoice]) -> MajorTypes {
         let r = Calculator::rate(invoices);
 
-        let mut major_type: Option<InvoiceType> = None;
-        let mut max = 0.0;
+        let result: (InvoiceType, IncomeAndExpenses) = r
+            .clone()
+            .into_iter()
+            .max_by(|a, b| a.1.income.total_cmp(&b.1.income))
+            .unwrap();
+        let max_income = MajorTypeEntry::new(result.0, result.1.income);
 
-        if r.car > max {
-            max = r.car;
-            major_type = Some(InvoiceType::Car);
-        }
-        if r.clothes > max {
-            max = r.clothes;
-            major_type = Some(InvoiceType::Clothes);
-        }
-        if r.eat > max {
-            max = r.eat;
-            major_type = Some(InvoiceType::Eat);
-        }
-        if r.gas > max {
-            max = r.gas;
-            major_type = Some(InvoiceType::Gas);
-        }
-        if r.fun > max {
-            max = r.fun;
-            major_type = Some(InvoiceType::Fun);
-        }
-        if r.health > max {
-            max = r.health;
-            major_type = Some(InvoiceType::Health);
-        }
-        if r.home > max {
-            max = r.home;
-            major_type = Some(InvoiceType::Home);
-        }
-        if r.telecommunication > max {
-            max = r.telecommunication;
-            major_type = Some(InvoiceType::Telecommunication);
-        }
-        if r.unknown > max {
-            major_type = Some(InvoiceType::Unknown);
-        }
+        let result: (InvoiceType, IncomeAndExpenses) = r
+            .clone()
+            .into_iter()
+            .max_by(|a, b| b.1.expenses.total_cmp(&a.1.expenses))
+            .unwrap();
+        let max_expenses = MajorTypeEntry::new(result.0, result.1.expenses);
 
-        major_type
+        let result: (InvoiceType, IncomeAndExpenses) = r
+            .clone()
+            .into_iter()
+            .min_by(|a, b| a.1.income.total_cmp(&b.1.income))
+            .unwrap();
+        let min_income = MajorTypeEntry::new(result.0, result.1.income);
+
+        let result: (InvoiceType, IncomeAndExpenses) = r
+            .into_iter()
+            .min_by(|a, b| b.1.expenses.total_cmp(&a.1.expenses))
+            .unwrap();
+        let min_expenses = MajorTypeEntry::new(result.0, result.1.expenses);
+
+        MajorTypes {
+            min_income,
+            min_expenses,
+            max_income,
+            max_expenses,
+        }
     }
 
     pub fn sum_for_type(invoices: &[Invoice], invoice_type: InvoiceType) -> f64 {
@@ -114,55 +107,118 @@ impl Calculator {
     fn rate(invoices: &[Invoice]) -> InvoiceTypeScore {
         let mut score = InvoiceTypeScore::new();
         for invoice in invoices {
-            score.add(invoice.invoice_type(), invoice.base_amount());
+            score.push(invoice.invoice_type(), invoice.base_amount.clone());
         }
         score
     }
 }
 
+#[derive(Debug, Clone)]
+pub struct MajorTypeEntry {
+    pub invoice_type: InvoiceType,
+    pub value: f64,
+}
+
+impl MajorTypeEntry {
+    fn new(invoice_type: InvoiceType, value: f64) -> Self {
+        Self {
+            invoice_type,
+            value,
+        }
+    }
+}
+
+#[allow(unused)]
+#[derive(Debug, Clone)]
+pub struct MajorTypes {
+    pub min_income: MajorTypeEntry,
+    pub min_expenses: MajorTypeEntry,
+    pub max_income: MajorTypeEntry,
+    pub max_expenses: MajorTypeEntry,
+}
+
+#[derive(Debug, Clone, Default)]
+struct IncomeAndExpenses {
+    income: f64,
+    expenses: f64,
+}
+
+impl IncomeAndExpenses {
+    fn push(&mut self, amount: &Amount) {
+        let value = amount.value;
+        if value < 0.0 {
+            self.expenses += value
+        } else {
+            self.income += value
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
 struct InvoiceTypeScore {
-    car: f64,
-    clothes: f64,
-    eat: f64,
-    gas: f64,
-    fun: f64,
-    health: f64,
-    home: f64,
-    telecommunication: f64,
-    unknown: f64,
+    car: IncomeAndExpenses,
+    clothes: IncomeAndExpenses,
+    eat: IncomeAndExpenses,
+    gas: IncomeAndExpenses,
+    fun: IncomeAndExpenses,
+    health: IncomeAndExpenses,
+    home: IncomeAndExpenses,
+    telecommunication: IncomeAndExpenses,
+    unknown: IncomeAndExpenses,
 }
 
 impl InvoiceTypeScore {
     pub fn new() -> Self {
         InvoiceTypeScore {
-            car: 0.0,
-            clothes: 0.0,
-            eat: 0.0,
-            gas: 0.0,
-            fun: 0.0,
-            health: 0.0,
-            home: 0.0,
-            telecommunication: 0.0,
-            unknown: 0.0,
+            car: IncomeAndExpenses::default(),
+            clothes: IncomeAndExpenses::default(),
+            eat: IncomeAndExpenses::default(),
+            gas: IncomeAndExpenses::default(),
+            fun: IncomeAndExpenses::default(),
+            health: IncomeAndExpenses::default(),
+            home: IncomeAndExpenses::default(),
+            telecommunication: IncomeAndExpenses::default(),
+            unknown: IncomeAndExpenses::default(),
         }
     }
 
-    fn add(&mut self, invoice_type: InvoiceType, amount: Option<Amount>) {
-        let amount = match amount {
-            Some(a) => a.value(),
-            None => 0.0,
+    fn push(&mut self, invoice_type: InvoiceType, amount: Option<Amount>) {
+        let amount = &match amount {
+            Some(a) => a,
+            None => return,
         };
 
         match invoice_type {
-            InvoiceType::Car => self.car += amount,
-            InvoiceType::Clothes => self.clothes += amount,
-            InvoiceType::Eat => self.eat += amount,
-            InvoiceType::Gas => self.gas += amount,
-            InvoiceType::Fun => self.fun += amount,
-            InvoiceType::Health => self.health += amount,
-            InvoiceType::Home => self.home += amount,
-            InvoiceType::Telecommunication => self.telecommunication += amount,
-            InvoiceType::Unknown => self.unknown += amount,
+            InvoiceType::Car => self.car.push(amount),
+            InvoiceType::Clothes => self.clothes.push(amount),
+            InvoiceType::Eat => self.eat.push(amount),
+            InvoiceType::Gas => self.gas.push(amount),
+            InvoiceType::Fun => self.fun.push(amount),
+            InvoiceType::Health => self.health.push(amount),
+            InvoiceType::Home => self.home.push(amount),
+            InvoiceType::Telecommunication => self.telecommunication.push(amount),
+            InvoiceType::Unknown => self.unknown.push(amount),
         }
+    }
+}
+
+impl IntoIterator for InvoiceTypeScore {
+    type Item = (InvoiceType, IncomeAndExpenses);
+
+    type IntoIter = std::array::IntoIter<(InvoiceType, IncomeAndExpenses), 9>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        [
+            (InvoiceType::Car, self.car),
+            (InvoiceType::Clothes, self.clothes),
+            (InvoiceType::Eat, self.eat),
+            (InvoiceType::Gas, self.gas),
+            (InvoiceType::Fun, self.fun),
+            (InvoiceType::Health, self.health),
+            (InvoiceType::Home, self.home),
+            (InvoiceType::Telecommunication, self.telecommunication),
+            (InvoiceType::Unknown, self.unknown),
+        ]
+        .into_iter()
     }
 }
