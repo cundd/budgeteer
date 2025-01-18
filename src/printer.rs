@@ -66,7 +66,7 @@ impl Printer {
             self.print(style_for_type(
                 invoice_type,
                 format!(
-                    "{:width$}│ {:<4} {: >9.2}",
+                    " {:width$}│ {:<4} {: >10.2} ",
                     format!("{}", invoice_type),
                     base_currency.symbol,
                     sum,
@@ -74,33 +74,26 @@ impl Printer {
                 ),
                 false,
                 true,
-                true,
             ));
 
             for currency in &currencies_to_output {
                 let sum = Calculator::sum_for_type_and_currency(invoices, invoice_type, currency);
                 self.print(style_for_type(
                     invoice_type,
-                    format!("│ {:<2} {: >8.2}", currency.symbol, sum),
+                    format!("│ {:<3} {: >9.2} ", currency.symbol, sum),
                     false,
-                    true,
                     true,
                 ));
             }
 
             self.print(style_for_type(
                 invoice_type,
-                invoice_type.identifier().to_string(),
-                true,
+                format!(" {} ", invoice_type.identifier()),
                 true,
                 true,
             ));
             self.print_newline();
         }
-
-        self.print_newline();
-        self.println(style_header(format!("{:<50}", "Chart")));
-        self.print_bar_chart(base_currency, invoices);
     }
 
     /// Print the "bar chart"
@@ -135,7 +128,6 @@ impl Printer {
                     format!(" {:<width$}", text),
                     false,
                     true,
-                    false,
                 ));
             } else {
                 self.print(style_for_type(
@@ -143,7 +135,6 @@ impl Printer {
                     format!(" {}", &text[..width]),
                     false,
                     true,
-                    false,
                 ));
                 write!(self.output, "{}", &text[width..]).expect(STDOUT_WRITE_ERROR);
             }
@@ -154,14 +145,14 @@ impl Printer {
 
     fn print_type_sum_header(&mut self, currencies_to_output: &[Currency]) {
         self.print(style_header(format!(
-            "{:width$}│ {}",
+            " {:width$}│ {} ",
             "Typ",
             "∑ Basis Währung",
             width = 22
         )));
 
         for currency in currencies_to_output {
-            self.print(style_header(format!("│ ∑ {:<5}     ", currency.symbol)));
+            self.print(style_header(format!("│ ∑ {:<12}", currency.symbol)));
         }
 
         self.print(style_header("   "));
@@ -202,7 +193,7 @@ impl PrinterTrait for Printer {
 Betrag      : {}
 Typ         : {}
 Notiz       : {}"#,
-            style_for_type(invoice_type, " ", false, true, true),
+            style_for_type(invoice_type, "   ", false, true),
             date,
             amount_string,
             invoice_type,
@@ -223,6 +214,9 @@ Notiz       : {}"#,
 
     fn print_sum(&mut self, base_currency: &Currency, invoices: &[Invoice]) {
         self.print_type_sum(base_currency, invoices);
+        self.print_newline();
+        self.println(style_header(format!(" {:<50}", "Chart")));
+        self.print_bar_chart(base_currency, invoices);
         self.println("-----------------------------------------");
         self.print_grand_total(base_currency, invoices);
     }
@@ -239,13 +233,12 @@ Notiz       : {}"#,
                 style_for_type(
                     major_types.max_expenses.invoice_type,
                     format!(
-                        "{}: {: >8.2}",
+                        " {} {: >8.2} ",
                         major_types.max_expenses.invoice_type.identifier(),
                         major_types.max_expenses.value
                     ),
                     true,
                     true,
-                    true
                 ),
                 width = 12
             )
@@ -269,62 +262,31 @@ Notiz       : {}"#,
     }
 }
 
-fn style_for_type<T: AsRef<str>>(
+fn style_for_type<T: Into<String>>(
     invoice_type: InvoiceType,
     text: T,
     fg: bool,
     bg: bool,
-    add_space: bool,
 ) -> String {
-    let prepared_multi_line = text
-        .as_ref()
-        .lines()
-        .map(|l| {
-            if l.is_empty() {
-                "".to_owned()
-            } else if add_space {
-                format!(" {} ", l)
-            } else {
-                l.to_owned()
-            }
-        })
-        .collect::<Vec<String>>()
-        .join("\n");
+    let text = text.into();
 
     if !fg && !bg {
-        return prepared_multi_line;
+        return text;
     }
 
     if fg && bg {
-        prepared_multi_line
-            .with(color_for_type(invoice_type, false))
+        text.with(color_for_type(invoice_type, false))
             .on(color_for_type(invoice_type, true))
     } else if fg {
-        prepared_multi_line.with(color_for_type(invoice_type, false))
+        text.with(color_for_type(invoice_type, false))
     } else {
-        prepared_multi_line.on(color_for_type(invoice_type, true))
+        text.on(color_for_type(invoice_type, true))
     }
     .to_string()
 }
 
-fn style_header<T: AsRef<str>>(text: T) -> String {
-    let prepared_multi_line = text
-        .as_ref()
-        .lines()
-        .map(|l| {
-            if !l.is_empty() {
-                format!(" {}", l)
-            } else {
-                "".to_owned()
-            }
-        })
-        .collect::<Vec<String>>()
-        .join("\n");
-
-    prepared_multi_line
-        .with(Color::White)
-        .on(Color::Black)
-        .to_string()
+fn style_header<T: Into<String>>(text: T) -> String {
+    text.into().with(Color::White).on(Color::Black).to_string()
 }
 
 fn color_for_type(invoice_type: InvoiceType, light: bool) -> Color {
