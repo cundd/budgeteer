@@ -7,7 +7,7 @@ use crate::{
     filter::Request,
     invoice::Invoice,
 };
-use chrono::NaiveDate;
+use chrono::{NaiveDate, Utc};
 use std::path::Path;
 
 pub struct InvoiceRepository {
@@ -66,17 +66,23 @@ VALUES ( ?1, ?2, ?3, ?4, ?5 )
     }
 
     pub async fn fetch_with_request(&self, filter_request: Request) -> Result<Vec<Invoice>, Error> {
+        let from = filter_request
+            .from
+            .unwrap_or(NaiveDate::from_ymd_opt(1900, 1, 1).unwrap());
+        let to = filter_request.to.unwrap_or(Utc::now().naive_utc().date());
         let query = if let Some(invoice_type) = filter_request.invoice_type {
             sqlx::query_as(
                 r#"SELECT * FROM transactions WHERE (date > ? AND date <= ?) AND type = ?;"#,
             )
-            .bind(filter_request.from.unwrap_or(NaiveDate::MIN))
-            .bind(filter_request.to.unwrap_or(NaiveDate::MAX))
+            .bind(from)
+            .bind(to)
             .bind(invoice_type)
         } else {
+            println!("{:?}", filter_request.from.unwrap_or(NaiveDate::MIN));
+            println!("{:?}", filter_request.to.unwrap_or(NaiveDate::MAX));
             sqlx::query_as(r#"SELECT * FROM transactions WHERE (date > ? AND date <= ?)"#)
-                .bind(filter_request.from.unwrap_or(NaiveDate::MIN))
-                .bind(filter_request.to.unwrap_or(NaiveDate::MAX))
+                .bind(from)
+                .bind(to)
         };
 
         let transactions: Vec<Invoice> = query.fetch_all(&self.database.pool).await?;
