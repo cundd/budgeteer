@@ -8,13 +8,16 @@ use self::amount::read_amount;
 use self::currency::read_currency;
 use self::date::read_date;
 use self::invoice_type::read_invoice_type;
+use self::invoice_type::read_invoice_type_or_skip;
 use self::note::NoteWizard;
 use crate::currency::Currency;
 use crate::error::Res;
 use crate::invoice::amount::Amount;
+use crate::invoice::invoice_type::InvoiceType;
 use crate::invoice::Invoice;
 use crate::persistence::InvoiceRepository;
 use crate::printer::{Printer, PrinterTrait};
+use chrono::NaiveDate;
 use dialoguer::console::Style;
 use dialoguer::theme::{ColorfulTheme, Theme};
 use dialoguer::Confirm;
@@ -89,12 +92,32 @@ impl Wizard {
         }
     }
 
+    pub fn read_date(&self) -> Res<NaiveDate> {
+        read_date(self.theme.as_ref())
+    }
+
+    pub fn read_currency(&self) -> Res<Currency> {
+        read_currency(self.theme.as_ref())
+    }
+
+    pub fn read_amount(&self) -> Res<f64> {
+        read_amount(self.theme.as_ref())
+    }
+
+    pub fn read_invoice_type(&self, allow_unknown: bool) -> Res<InvoiceType> {
+        read_invoice_type(self.theme.as_ref(), allow_unknown)
+    }
+
+    pub fn read_invoice_type_or_skip(&self, allow_unknown: bool) -> Res<Option<InvoiceType>> {
+        read_invoice_type_or_skip(self.theme.as_ref(), allow_unknown)
+    }
+
     fn create_invoice(&self, invoices: &[Invoice]) -> Res<Invoice> {
         let theme = self.theme.as_ref();
-        let date = read_date(theme)?;
-        let currency = read_currency(theme)?;
-        let amount = read_amount(theme)?;
-        let invoice_type = read_invoice_type(theme)?;
+        let date = self.read_date()?;
+        let currency = self.read_currency()?;
+        let amount = self.read_amount()?;
+        let invoice_type = self.read_invoice_type(false)?;
         let note = self.note_wizard.read(theme, invoices)?;
 
         Ok(Invoice::new(

@@ -26,7 +26,10 @@ pub trait PrinterTrait {
 
     fn print_sum(&mut self, base_currency: &Currency, invoices: &[Invoice]);
     fn print_month_sum(&mut self, month: Month, base_currency: &Currency, invoices: &[Invoice]);
+    fn print_header<S: AsRef<str>>(&mut self, text: S);
+    fn print_subheader<S: AsRef<str>>(&mut self, text: S);
     fn print_newline(&mut self);
+    fn println<S: AsRef<str>>(&mut self, text: S);
 }
 
 pub struct Printer {
@@ -42,9 +45,6 @@ impl Printer {
         write!(self.output, "{}", text.as_ref()).expect(STDOUT_WRITE_ERROR)
     }
 
-    fn println<S: AsRef<str>>(&mut self, text: S) {
-        writeln!(self.output, "{}", text.as_ref()).expect(STDOUT_WRITE_ERROR)
-    }
     fn print_type_sum(&mut self, base_currency: &Currency, invoices: &[Invoice]) {
         // Skip currencies without any Invoice
         let currencies_to_output: Vec<Currency> = currency_data::all()
@@ -188,11 +188,11 @@ impl PrinterTrait for Printer {
 
         writeln!(
             self.output,
-            r#"
-{ } Datum   : {}
+            r#"{ } Datum   : {}
 Betrag      : {}
 Typ         : {}
-Notiz       : {}"#,
+Notiz       : {}
+"#,
             style_for_type(invoice_type, "   ", false, true),
             date,
             amount_string,
@@ -259,6 +259,18 @@ Notiz       : {}"#,
 
     fn print_newline(&mut self) {
         self.println("")
+    }
+
+    fn println<S: AsRef<str>>(&mut self, text: S) {
+        writeln!(self.output, "{}", text.as_ref()).expect(STDOUT_WRITE_ERROR)
+    }
+
+    fn print_header<S: AsRef<str>>(&mut self, text: S) {
+        self.println(style_header(text.as_ref()))
+    }
+
+    fn print_subheader<S: AsRef<str>>(&mut self, text: S) {
+        self.println(text.as_ref())
     }
 }
 

@@ -2,6 +2,7 @@ use crate::currency::Currency;
 use crate::invoice::amount::Amount;
 use crate::invoice::invoice_type::InvoiceType;
 use chrono::prelude::*;
+use main_transaction_data::MainTransactionData;
 use sqlx::prelude::FromRow;
 use sqlx::sqlite::SqliteRow;
 use sqlx::Row;
@@ -10,6 +11,7 @@ use std::fmt;
 
 pub mod amount;
 pub mod invoice_type;
+pub mod main_transaction_data;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Invoice {
@@ -106,6 +108,26 @@ impl PartialOrd for Invoice {
                 }
             }
         }
+    }
+}
+
+impl MainTransactionData for Invoice {
+    fn amount(&self) -> &Amount {
+        &self.amount
+    }
+
+    fn date(&self) -> NaiveDate {
+        self.date
+    }
+}
+
+impl MainTransactionData for &Invoice {
+    fn amount(&self) -> &Amount {
+        &self.amount
+    }
+
+    fn date(&self) -> NaiveDate {
+        self.date
     }
 }
 

@@ -11,6 +11,7 @@ pub enum Error {
     FileIO(String),
     Parse(String),
     Rate(String),
+    Import(String),
     #[allow(dead_code)]
     General(String),
     LineEmpty,
@@ -25,6 +26,7 @@ impl Error {
             Error::Argument(_) => "Argument error",
             Error::FileIO(_) => "File IO error",
             Error::Parse(_) => "Parse Error",
+            Error::Import(_) => "Import Error",
             Error::General(_) => "General Error",
             Error::LineComment => "Line comment",
             Error::LineEmpty => "Line empty",
@@ -47,6 +49,7 @@ impl fmt::Display for Error {
         match *self {
             Error::Argument(ref s) => write!(f, "{}: {}", self.description(), s),
             Error::FileIO(ref s) => write!(f, "{}: {}", self.description(), s),
+            Error::Import(ref s) => write!(f, "{}: {}", self.description(), s),
             Error::LineComment => write!(f, "{}", self.description()),
             Error::LineEmpty => write!(f, "{}", self.description()),
             Error::LineSeparator => write!(f, "{}", self.description()),

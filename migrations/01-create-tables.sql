@@ -4,8 +4,7 @@ CREATE TABLE IF NOT EXISTS transactions (
     currency TEXT NOT NULL,
     amount REAL NOT NULL,
     type INTEGER NOT NULL,
-    note TEXT NOT NULL,
-    UNIQUE(date, amount, type) ON CONFLICT ABORT
+    note TEXT NOT NULL
 ) STRICT;
 
 CREATE TABLE IF NOT EXISTS exchange_rates (

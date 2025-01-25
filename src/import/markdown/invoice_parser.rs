@@ -1,18 +1,13 @@
 use crate::currency::Currency;
 use crate::error::Error;
+use crate::import::markdown::file_reader::LineParts;
+use crate::import::ImportResult;
 use crate::invoice::amount::Amount;
 use crate::invoice::invoice_type::InvoiceType;
 use crate::invoice::Invoice;
-use crate::markdown::file_reader::LineParts;
 use chrono::NaiveDate;
 use std::cmp::Ordering;
 use std::str::FromStr;
-
-#[derive(Debug)]
-pub struct ParserResult {
-    pub invoices: Vec<Invoice>,
-    pub errors: Vec<Error>,
-}
 
 pub struct InvoiceParser {}
 
@@ -21,7 +16,7 @@ impl InvoiceParser {
         InvoiceParser {}
     }
 
-    pub fn parse_lines(&self, lines: Vec<LineParts>) -> ParserResult {
+    pub fn parse_lines(&self, lines: Vec<LineParts>) -> ImportResult {
         let mut invoices = vec![];
         let mut errors = vec![];
         for parts in lines {
@@ -42,7 +37,10 @@ impl InvoiceParser {
             }
         });
 
-        ParserResult { invoices, errors }
+        ImportResult {
+            transactions: invoices,
+            errors,
+        }
     }
 
     pub fn build_from_vec(&self, parts: Vec<&str>) -> Result<Invoice, Error> {
@@ -120,7 +118,7 @@ mod tests {
         match result {
             Ok(i) => {
                 assert_eq!(i.invoice_type(), InvoiceType::Gas);
-                assert_eq!(i.amount(), Amount::new(66.6, Currency::eur()));
+                assert_eq!(i.amount(), Amount::new(-66.6, Currency::eur()));
                 assert_eq!(i.date(), NaiveDate::from_ymd_opt(2019, 2, 15).unwrap());
                 assert!(i.note().is_some());
                 assert_eq!(i.note().unwrap(), "Gas station");
