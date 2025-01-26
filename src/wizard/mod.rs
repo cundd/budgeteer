@@ -16,7 +16,7 @@ use crate::invoice::amount::Amount;
 use crate::invoice::invoice_type::InvoiceType;
 use crate::invoice::Invoice;
 use crate::persistence::InvoiceRepository;
-use crate::printer::{Printer, PrinterTrait};
+use crate::printer::PrinterTrait;
 use chrono::NaiveDate;
 use dialoguer::console::Style;
 use dialoguer::theme::{ColorfulTheme, Theme};
@@ -47,9 +47,9 @@ impl Wizard {
         }
     }
 
-    pub async fn run(
+    pub async fn run<P: PrinterTrait>(
         &self,
-        printer: &mut Printer,
+        printer: &mut P,
         base_currency: &Currency,
         repository: &InvoiceRepository,
         invoices: &[Invoice],
