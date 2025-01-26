@@ -28,7 +28,7 @@ pub fn read_transaction_type_or_skip(
         TransactionType::all_known().to_vec()
     };
     let selection = Select::with_theme(theme)
-        .with_prompt("Type (or press ESC to skip)")
+        .with_prompt("Select type (or press ESC or q to skip this transaction)")
         .default(0)
         .items(&all[..])
         .interact_opt()?;

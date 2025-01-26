@@ -38,7 +38,7 @@ impl TransactionParser {
         });
 
         ImportResult {
-            transactions: transactions,
+            transactions,
             errors,
         }
     }

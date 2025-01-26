@@ -34,7 +34,7 @@ pub async fn import<P: PrinterTrait>(
             let possible_duplicates =
                 DuplicateChecker::get_possible_duplicates(&transaction, &current_transactions);
             if !possible_duplicates.is_empty() {
-                printer.print_subheader("Found possible duplicates:");
+                printer.print_warning("⚠︎ Found possible duplicates:");
                 for possible_duplicate in possible_duplicates {
                     printer.print_transaction(&base_currency, possible_duplicate);
                 }

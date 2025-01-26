@@ -11,6 +11,7 @@ use self::note::NoteWizard;
 use self::transaction_type::read_transaction_type;
 use self::transaction_type::read_transaction_type_or_skip;
 use crate::currency::Currency;
+use crate::duplicate_check::DuplicateChecker;
 use crate::error::Res;
 use crate::persistence::TransactionRepository;
 use crate::printer::PrinterTrait;
@@ -54,17 +55,26 @@ impl Wizard {
         repository: &TransactionRepository,
         transactions: &[Transaction],
     ) -> Res<()> {
-        println!("Welcome to the transaction wizard");
+        printer.print_header("Welcome to the transaction wizard");
 
-        println!("Answer the following questions to insert a new transaction");
-        println!("(Press ctrl+c to exit)");
+        printer.println("Answer the following questions to insert a new transaction");
+        printer.println("(Press ctrl+c to exit)");
 
         loop {
             let transaction = self.create_transaction(transactions)?;
 
-            println!();
-            println!("Read the following transaction:");
+            printer.print_newline();
+            printer.print_subheader("Read the following transaction:");
             printer.print_transaction(base_currency, &transaction);
+
+            let possible_duplicates =
+                DuplicateChecker::get_possible_duplicates(&transaction, transactions);
+            if !possible_duplicates.is_empty() {
+                printer.print_warning("⚠︎ Found possible duplicates:");
+                for possible_duplicate in possible_duplicates {
+                    printer.print_transaction(base_currency, possible_duplicate);
+                }
+            }
 
             let confirm = Confirm::with_theme(self.theme.as_ref());
             if confirm
@@ -74,7 +84,7 @@ impl Wizard {
                 .interact()?
             {
                 match repository.add(&transaction).await {
-                    Ok(id) => println!("Saved the new transaction #{}", id),
+                    Ok(id) => printer.println(format!("Saved the new transaction #{}", id)),
                     Err(_) => eprintln!("Could not store the transaction"),
                 }
 
@@ -86,8 +96,8 @@ impl Wizard {
                     return Ok(());
                 }
             } else {
-                println!();
-                println!("Build another transaction instead");
+                printer.print_newline();
+                printer.println("Build another transaction instead");
             }
         }
     }

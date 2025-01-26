@@ -33,6 +33,7 @@ pub trait PrinterTrait {
     );
     fn print_header<S: AsRef<str>>(&mut self, text: S);
     fn print_subheader<S: AsRef<str>>(&mut self, text: S);
+    fn print_warning<S: AsRef<str>>(&mut self, text: S);
     fn print_newline(&mut self);
     fn println<S: AsRef<str>>(&mut self, text: S);
 }
@@ -284,6 +285,11 @@ Notiz       : {}
 
     fn print_subheader<S: AsRef<str>>(&mut self, text: S) {
         self.println(text.as_ref())
+    }
+
+    fn print_warning<S: AsRef<str>>(&mut self, text: S) {
+        let styled_text = text.as_ref().with(Color::Yellow).to_string();
+        self.println(styled_text)
     }
 }
 
