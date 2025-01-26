@@ -1,9 +1,9 @@
-use crate::{error::Error, invoice::Invoice};
+use crate::{error::Error, transaction::Transaction};
 
 pub mod json;
 pub mod markdown;
 
 pub struct ImportResult {
-    pub transactions: Vec<Invoice>,
+    pub transactions: Vec<Transaction>,
     pub errors: Vec<Error>,
 }

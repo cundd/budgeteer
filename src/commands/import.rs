@@ -4,7 +4,7 @@ use crate::{
     error::{Error, Res},
     file::normalize_file_path,
     import,
-    persistence::InvoiceRepository,
+    persistence::TransactionRepository,
     printer::PrinterTrait,
     verbosity::Verbosity,
     wizard::Wizard,
@@ -20,7 +20,7 @@ pub async fn import<P: PrinterTrait>(
 ) -> Res<()> {
     let input_file = normalize_file_path(input)?;
     let output_file = normalize_file_path(output)?;
-    let repository = InvoiceRepository::new(&output_file).await?;
+    let repository = TransactionRepository::new(&output_file).await?;
     let current_transactions = repository.fetch_all().await?;
 
     let result = match input_file
@@ -29,20 +29,20 @@ pub async fn import<P: PrinterTrait>(
     {
         Some("json") => import::json::get_transactions(input_file, |mut transaction| {
             printer.print_header("Complete the following transaction details");
-            printer.print_invoice(&base_currency, &transaction);
+            printer.print_transaction(&base_currency, &transaction);
 
             let possible_duplicates =
                 DuplicateChecker::get_possible_duplicates(&transaction, &current_transactions);
             if !possible_duplicates.is_empty() {
                 printer.print_subheader("Found possible duplicates:");
                 for possible_duplicate in possible_duplicates {
-                    printer.print_invoice(&base_currency, possible_duplicate);
+                    printer.print_transaction(&base_currency, possible_duplicate);
                 }
             }
 
-            let selected_invoice_type = Wizard::new().read_invoice_type_or_skip(true)?;
-            match selected_invoice_type {
-                Some(i) => transaction.invoice_type = i,
+            let selected_transaction_type = Wizard::new().read_transaction_type_or_skip(true)?;
+            match selected_transaction_type {
+                Some(i) => transaction.transaction_type = i,
                 None => return Ok(None),
             }
 
@@ -72,7 +72,7 @@ pub async fn import<P: PrinterTrait>(
         }
         if let Err(e) = repository.add(transaction).await {
             eprintln!("Error during import of transaction: {}", e);
-            printer.print_invoice(&base_currency, transaction);
+            printer.print_transaction(&base_currency, transaction);
             printer.print_newline();
 
             failed_imports_counter += 1;
@@ -82,7 +82,7 @@ pub async fn import<P: PrinterTrait>(
     }
 
     printer.print_header("Imported the following transactions:");
-    printer.print_invoices(&base_currency, &transactions);
+    printer.print_transactions(&base_currency, &transactions);
     printer.println(format!(
         "{} successful imports / {} failures / {} parsing errors",
         successful_imports_counter,

@@ -5,17 +5,17 @@ use crate::{
     },
     error::Error,
     filter::Request,
-    invoice::Invoice,
+    transaction::Transaction,
 };
 use chrono::{NaiveDate, Utc};
 use std::path::Path;
 
-pub struct InvoiceRepository {
+pub struct TransactionRepository {
     database: Database,
     exchange_rate_provider: ExchangeRateProvider,
 }
 
-impl InvoiceRepository {
+impl TransactionRepository {
     pub async fn new(path: &Path) -> Result<Self, Error> {
         let database = Database::new(path).await?;
         let exchange_rate_repository = ExchangeRateRepository::new(path).await?;
@@ -28,12 +28,12 @@ impl InvoiceRepository {
         })
     }
 
-    pub async fn add(&self, invoice: &Invoice) -> Result<i64, Error> {
-        let date = invoice.date();
-        let currency = invoice.amount().currency().iso;
-        let value = invoice.amount().value();
-        let invoice_type = invoice.invoice_type();
-        let note = invoice.note();
+    pub async fn add(&self, transaction: &Transaction) -> Result<i64, Error> {
+        let date = transaction.date();
+        let currency = transaction.amount().currency().iso;
+        let value = transaction.amount().value();
+        let transaction_type = transaction.transaction_type();
+        let note = transaction.note();
 
         // Insert the spending, then obtain the ID of this row
         let id = sqlx::query!(
@@ -44,7 +44,7 @@ VALUES ( ?1, ?2, ?3, ?4, ?5 )
             date,
             currency,
             value,
-            invoice_type,
+            transaction_type,
             note,
         )
         .execute(&self.database.pool)
@@ -54,8 +54,8 @@ VALUES ( ?1, ?2, ?3, ?4, ?5 )
         Ok(id)
     }
 
-    pub async fn fetch_all(&self) -> Result<Vec<Invoice>, Error> {
-        let transactions: Vec<Invoice> = sqlx::query_as(r#"SELECT * FROM transactions;"#)
+    pub async fn fetch_all(&self) -> Result<Vec<Transaction>, Error> {
+        let transactions: Vec<Transaction> = sqlx::query_as(r#"SELECT * FROM transactions;"#)
             .fetch_all(&self.database.pool)
             .await?;
 
@@ -65,18 +65,21 @@ VALUES ( ?1, ?2, ?3, ?4, ?5 )
             .collect())
     }
 
-    pub async fn fetch_with_request(&self, filter_request: Request) -> Result<Vec<Invoice>, Error> {
+    pub async fn fetch_with_request(
+        &self,
+        filter_request: Request,
+    ) -> Result<Vec<Transaction>, Error> {
         let from = filter_request
             .from
             .unwrap_or(NaiveDate::from_ymd_opt(1900, 1, 1).unwrap());
         let to = filter_request.to.unwrap_or(Utc::now().naive_utc().date());
-        let query = if let Some(invoice_type) = filter_request.invoice_type {
+        let query = if let Some(transaction_type) = filter_request.transaction_type {
             sqlx::query_as(
                 r#"SELECT * FROM transactions WHERE (date > ? AND date <= ?) AND type = ?;"#,
             )
             .bind(from)
             .bind(to)
-            .bind(invoice_type)
+            .bind(transaction_type)
         } else {
             println!("{:?}", filter_request.from.unwrap_or(NaiveDate::MIN));
             println!("{:?}", filter_request.to.unwrap_or(NaiveDate::MAX));
@@ -85,7 +88,7 @@ VALUES ( ?1, ?2, ?3, ?4, ?5 )
                 .bind(to)
         };
 
-        let transactions: Vec<Invoice> = query.fetch_all(&self.database.pool).await?;
+        let transactions: Vec<Transaction> = query.fetch_all(&self.database.pool).await?;
 
         Ok(transactions
             .into_iter()
@@ -93,16 +96,16 @@ VALUES ( ?1, ?2, ?3, ?4, ?5 )
             .collect())
     }
 
-    fn prepare_base_amount(&self, invoice: Invoice) -> Invoice {
-        if invoice.amount.currency == Currency::base() {
-            return invoice.with_base_amount(invoice.amount.clone());
+    fn prepare_base_amount(&self, transaction: Transaction) -> Transaction {
+        if transaction.amount.currency == Currency::base() {
+            return transaction.with_base_amount(transaction.amount.clone());
         }
 
-        let exchange_rate = self.exchange_rate_provider.find_exchange_rate(&invoice);
+        let exchange_rate = self.exchange_rate_provider.find_exchange_rate(&transaction);
 
         match exchange_rate {
-            Some(exchange_rate) => AmountConverter::convert_to_base(invoice, exchange_rate),
-            None => invoice,
+            Some(exchange_rate) => AmountConverter::convert_to_base(transaction, exchange_rate),
+            None => transaction,
         }
     }
 }

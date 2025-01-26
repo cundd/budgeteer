@@ -3,9 +3,9 @@ use crate::{
     error::Res,
     file::normalize_file_path,
     filter::Request,
-    invoice::{invoice_type::InvoiceType, Invoice},
-    persistence::InvoiceRepository,
+    persistence::TransactionRepository,
     printer::PrinterTrait,
+    transaction::{transaction_type::TransactionType, Transaction},
     verbosity::Verbosity,
 };
 use chrono::prelude::*;
@@ -17,11 +17,11 @@ pub async fn analyze<P: PrinterTrait>(
     input: &PathBuf,
     from: Option<String>,
     to: Option<String>,
-    transaction_type: Option<InvoiceType>,
+    transaction_type: Option<TransactionType>,
     verbosity: Verbosity,
 ) -> Res<()> {
     let input_file = normalize_file_path(input)?;
-    let repository = InvoiceRepository::new(&input_file).await?;
+    let repository = TransactionRepository::new(&input_file).await?;
 
     let from = if let Some(from) = from {
         Some(Request::parse_from_date(&from)?)
@@ -40,28 +40,28 @@ pub async fn analyze<P: PrinterTrait>(
         printer.print_filter_request(&filter_request);
     }
 
-    let invoices_to_print = repository.fetch_with_request(filter_request).await?;
-    printer.print_invoices(&base_currency, &invoices_to_print);
+    let transactions_to_print = repository.fetch_with_request(filter_request).await?;
+    printer.print_transactions(&base_currency, &transactions_to_print);
 
     for month in 1..13 {
-        filter_and_print_month_sum(printer, &base_currency, &invoices_to_print, month);
+        filter_and_print_month_sum(printer, &base_currency, &transactions_to_print, month);
     }
 
     printer.print_newline();
-    printer.print_sum(&base_currency, &invoices_to_print);
+    printer.print_sum(&base_currency, &transactions_to_print);
     Ok(())
 }
 
 fn filter_and_print_month_sum<P: PrinterTrait>(
     printer: &mut P,
     base_currency: &Currency,
-    all_invoices: &[Invoice],
+    all_transactions: &[Transaction],
     month: u32,
 ) {
-    let invoices: Vec<Invoice> = all_invoices
+    let transactions: Vec<Transaction> = all_transactions
         .iter()
         .filter(|i| i.date.month() == month)
         .map(Clone::clone)
         .collect();
-    printer.print_month_sum(month.into(), base_currency, &invoices);
+    printer.print_month_sum(month.into(), base_currency, &transactions);
 }

@@ -25,7 +25,7 @@ pub struct ExchangeRate {
 //             date: row.try_get("date")?,
 //             amount,
 //             base_amount: None,
-//             invoice_type: row.try_get("type")?,
+//             transaction_type: row.try_get("type")?,
 //             note: row.try_get("note")?,
 //         })
 //     }

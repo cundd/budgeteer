@@ -1,6 +1,6 @@
 use crate::currency::Currency;
-use crate::invoice::invoice_type::InvoiceType;
 use crate::printer::Printer;
+use crate::transaction::transaction_type::TransactionType;
 use crate::verbosity::Verbosity;
 use clap::{arg, command, Parser, Subcommand};
 use std::path::PathBuf;
@@ -13,14 +13,14 @@ mod error;
 mod file;
 mod filter;
 mod import;
-mod invoice;
 mod month;
 mod persistence;
 mod printer;
+mod transaction;
 mod verbosity;
 mod wizard;
 
-/// Manage information about paid invoices
+/// Manage information about paid transactions
 #[derive(Parser)]
 #[command(version, about, long_about = None, arg_required_else_help = true)]
 struct Cli {
@@ -30,7 +30,7 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Commands {
-    /// Show information about paid invoices
+    /// Show information about paid transactions
     #[command(alias("a"))]
     Analyze {
         /// Budget file to use
@@ -47,7 +47,7 @@ enum Commands {
 
         /// Filter by type
         #[arg(short, long)]
-        r#type: Option<InvoiceType>,
+        r#type: Option<TransactionType>,
 
         /// Level of verbosity
         #[arg(short, long, action = clap::ArgAction::Count)]

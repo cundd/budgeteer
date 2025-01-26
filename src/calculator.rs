@@ -1,15 +1,15 @@
 use crate::currency::Currency;
-use crate::invoice::amount::Amount;
-use crate::invoice::invoice_type::InvoiceType;
-use crate::invoice::Invoice;
+use crate::transaction::amount::Amount;
+use crate::transaction::transaction_type::TransactionType;
+use crate::transaction::Transaction;
 
 pub struct Calculator {}
 
 impl Calculator {
-    pub fn sum(invoices: &[Invoice]) -> f64 {
-        let sum = invoices
+    pub fn sum(transactions: &[Transaction]) -> f64 {
+        let sum = transactions
             .iter()
-            .filter_map(|i: &Invoice| i.base_amount.as_ref().map(|a| a.value))
+            .filter_map(|i: &Transaction| i.base_amount.as_ref().map(|a| a.value))
             .sum();
 
         if sum != -0.0 {
@@ -19,31 +19,31 @@ impl Calculator {
         }
     }
 
-    pub fn major_types(invoices: &[Invoice]) -> MajorTypes {
-        let r = Calculator::rate(invoices);
+    pub fn major_types(transactions: &[Transaction]) -> MajorTypes {
+        let r = Calculator::rate(transactions);
 
-        let result: (InvoiceType, IncomeAndExpenses) = r
+        let result: (TransactionType, IncomeAndExpenses) = r
             .clone()
             .into_iter()
             .max_by(|a, b| a.1.income.total_cmp(&b.1.income))
             .unwrap();
         let max_income = MajorTypeEntry::new(result.0, result.1.income);
 
-        let result: (InvoiceType, IncomeAndExpenses) = r
+        let result: (TransactionType, IncomeAndExpenses) = r
             .clone()
             .into_iter()
             .max_by(|a, b| b.1.expenses.total_cmp(&a.1.expenses))
             .unwrap();
         let max_expenses = MajorTypeEntry::new(result.0, result.1.expenses);
 
-        let result: (InvoiceType, IncomeAndExpenses) = r
+        let result: (TransactionType, IncomeAndExpenses) = r
             .clone()
             .into_iter()
             .min_by(|a, b| a.1.income.total_cmp(&b.1.income))
             .unwrap();
         let min_income = MajorTypeEntry::new(result.0, result.1.income);
 
-        let result: (InvoiceType, IncomeAndExpenses) = r
+        let result: (TransactionType, IncomeAndExpenses) = r
             .into_iter()
             .min_by(|a, b| b.1.expenses.total_cmp(&a.1.expenses))
             .unwrap();
@@ -57,11 +57,11 @@ impl Calculator {
         }
     }
 
-    pub fn sum_for_type(invoices: &[Invoice], invoice_type: InvoiceType) -> f64 {
-        let sum = invoices
+    pub fn sum_for_type(transactions: &[Transaction], transaction_type: TransactionType) -> f64 {
+        let sum = transactions
             .iter()
             .filter_map(|i| {
-                if i.invoice_type() == invoice_type {
+                if i.transaction_type() == transaction_type {
                     i.base_amount().map(|a| a.value())
                 } else {
                     None
@@ -77,14 +77,15 @@ impl Calculator {
     }
 
     pub fn sum_for_type_and_currency(
-        invoices: &[Invoice],
-        invoice_type: InvoiceType,
+        transactions: &[Transaction],
+        transaction_type: TransactionType,
         currency: &Currency,
     ) -> f64 {
-        let sum = invoices
+        let sum = transactions
             .iter()
             .filter(|i| {
-                i.invoice_type() == invoice_type && i.amount_ref().currency_ref() == currency
+                i.transaction_type() == transaction_type
+                    && i.amount_ref().currency_ref() == currency
             })
             .map(|i| i.amount_ref().value())
             .sum();
@@ -97,17 +98,20 @@ impl Calculator {
     }
 
     #[allow(unused)]
-    pub fn sort(invoices: &[Invoice]) -> Vec<Invoice> {
-        let mut clone = invoices.to_owned();
+    pub fn sort(transactions: &[Transaction]) -> Vec<Transaction> {
+        let mut clone = transactions.to_owned();
         clone.sort_by(|a, b| a.partial_cmp(b).map(|s| s.reverse()).unwrap());
 
         clone
     }
 
-    fn rate(invoices: &[Invoice]) -> InvoiceTypeScore {
-        let mut score = InvoiceTypeScore::new();
-        for invoice in invoices {
-            score.push(invoice.invoice_type(), invoice.base_amount.clone());
+    fn rate(transactions: &[Transaction]) -> TransactionTypeScore {
+        let mut score = TransactionTypeScore::new();
+        for transaction in transactions {
+            score.push(
+                transaction.transaction_type(),
+                transaction.base_amount.clone(),
+            );
         }
         score
     }
@@ -115,14 +119,14 @@ impl Calculator {
 
 #[derive(Debug, Clone)]
 pub struct MajorTypeEntry {
-    pub invoice_type: InvoiceType,
+    pub transaction_type: TransactionType,
     pub value: f64,
 }
 
 impl MajorTypeEntry {
-    fn new(invoice_type: InvoiceType, value: f64) -> Self {
+    fn new(transaction_type: TransactionType, value: f64) -> Self {
         Self {
-            invoice_type,
+            transaction_type,
             value,
         }
     }
@@ -155,7 +159,7 @@ impl IncomeAndExpenses {
 }
 
 #[derive(Debug, Clone)]
-struct InvoiceTypeScore {
+struct TransactionTypeScore {
     car: IncomeAndExpenses,
     clothes: IncomeAndExpenses,
     eat: IncomeAndExpenses,
@@ -167,9 +171,9 @@ struct InvoiceTypeScore {
     unknown: IncomeAndExpenses,
 }
 
-impl InvoiceTypeScore {
+impl TransactionTypeScore {
     pub fn new() -> Self {
-        InvoiceTypeScore {
+        TransactionTypeScore {
             car: IncomeAndExpenses::default(),
             clothes: IncomeAndExpenses::default(),
             eat: IncomeAndExpenses::default(),
@@ -182,42 +186,42 @@ impl InvoiceTypeScore {
         }
     }
 
-    fn push(&mut self, invoice_type: InvoiceType, amount: Option<Amount>) {
+    fn push(&mut self, transaction_type: TransactionType, amount: Option<Amount>) {
         let amount = &match amount {
             Some(a) => a,
             None => return,
         };
 
-        match invoice_type {
-            InvoiceType::Car => self.car.push(amount),
-            InvoiceType::Clothes => self.clothes.push(amount),
-            InvoiceType::Eat => self.eat.push(amount),
-            InvoiceType::Gas => self.gas.push(amount),
-            InvoiceType::Fun => self.fun.push(amount),
-            InvoiceType::Health => self.health.push(amount),
-            InvoiceType::Home => self.home.push(amount),
-            InvoiceType::Telecommunication => self.telecommunication.push(amount),
-            InvoiceType::Unknown => self.unknown.push(amount),
+        match transaction_type {
+            TransactionType::Car => self.car.push(amount),
+            TransactionType::Clothes => self.clothes.push(amount),
+            TransactionType::Eat => self.eat.push(amount),
+            TransactionType::Gas => self.gas.push(amount),
+            TransactionType::Fun => self.fun.push(amount),
+            TransactionType::Health => self.health.push(amount),
+            TransactionType::Home => self.home.push(amount),
+            TransactionType::Telecommunication => self.telecommunication.push(amount),
+            TransactionType::Unknown => self.unknown.push(amount),
         }
     }
 }
 
-impl IntoIterator for InvoiceTypeScore {
-    type Item = (InvoiceType, IncomeAndExpenses);
+impl IntoIterator for TransactionTypeScore {
+    type Item = (TransactionType, IncomeAndExpenses);
 
-    type IntoIter = std::array::IntoIter<(InvoiceType, IncomeAndExpenses), 9>;
+    type IntoIter = std::array::IntoIter<(TransactionType, IncomeAndExpenses), 9>;
 
     fn into_iter(self) -> Self::IntoIter {
         [
-            (InvoiceType::Car, self.car),
-            (InvoiceType::Clothes, self.clothes),
-            (InvoiceType::Eat, self.eat),
-            (InvoiceType::Gas, self.gas),
-            (InvoiceType::Fun, self.fun),
-            (InvoiceType::Health, self.health),
-            (InvoiceType::Home, self.home),
-            (InvoiceType::Telecommunication, self.telecommunication),
-            (InvoiceType::Unknown, self.unknown),
+            (TransactionType::Car, self.car),
+            (TransactionType::Clothes, self.clothes),
+            (TransactionType::Eat, self.eat),
+            (TransactionType::Gas, self.gas),
+            (TransactionType::Fun, self.fun),
+            (TransactionType::Health, self.health),
+            (TransactionType::Home, self.home),
+            (TransactionType::Telecommunication, self.telecommunication),
+            (TransactionType::Unknown, self.unknown),
         ]
         .into_iter()
     }

@@ -2,30 +2,30 @@ use crate::currency::Currency;
 use crate::error::Error;
 use crate::import::markdown::file_reader::LineParts;
 use crate::import::ImportResult;
-use crate::invoice::amount::Amount;
-use crate::invoice::invoice_type::InvoiceType;
-use crate::invoice::Invoice;
+use crate::transaction::amount::Amount;
+use crate::transaction::transaction_type::TransactionType;
+use crate::transaction::Transaction;
 use chrono::NaiveDate;
 use std::cmp::Ordering;
 use std::str::FromStr;
 
-pub struct InvoiceParser {}
+pub struct TransactionParser {}
 
-impl InvoiceParser {
+impl TransactionParser {
     pub fn new() -> Self {
-        InvoiceParser {}
+        TransactionParser {}
     }
 
     pub fn parse_lines(&self, lines: Vec<LineParts>) -> ImportResult {
-        let mut invoices = vec![];
+        let mut transactions = vec![];
         let mut errors = vec![];
         for parts in lines {
             match self.build_from_vec(parts.iter().map(String::as_str).collect()) {
-                Ok(invoice) => invoices.push(invoice),
+                Ok(transaction) => transactions.push(transaction),
                 Err(error) => errors.push(error),
             }
         }
-        invoices.sort_by(|a, b| {
+        transactions.sort_by(|a, b| {
             if a.date() > b.date() {
                 Ordering::Greater
             } else if a.date() < b.date() {
@@ -38,12 +38,12 @@ impl InvoiceParser {
         });
 
         ImportResult {
-            transactions: invoices,
+            transactions: transactions,
             errors,
         }
     }
 
-    pub fn build_from_vec(&self, parts: Vec<&str>) -> Result<Invoice, Error> {
+    pub fn build_from_vec(&self, parts: Vec<&str>) -> Result<Transaction, Error> {
         let string_vec: Vec<String> = parts.into_iter().map(String::from).collect();
 
         let date = self.parse_date(&string_vec)?;
@@ -52,11 +52,18 @@ impl InvoiceParser {
         let currency = Currency::from_str(&raw_currency)?;
         let amount = Amount::new(-1.0 * self.parse_amount(&string_vec)?, currency);
 
-        let invoice_type = InvoiceType::from_str(string_vec.get(3).unwrap_or(&"".to_string()));
+        let transaction_type =
+            TransactionType::from_str(string_vec.get(3).unwrap_or(&"".to_string()));
         let note = self.get_vec_part(&string_vec, 4);
         let base_amount = None;
 
-        Ok(Invoice::new(date, amount, base_amount, invoice_type, note))
+        Ok(Transaction::new(
+            date,
+            amount,
+            base_amount,
+            transaction_type,
+            note,
+        ))
     }
 
     fn parse_date(&self, string_vec: &[String]) -> Result<NaiveDate, Error> {
@@ -112,12 +119,12 @@ mod tests {
 
     #[test]
     fn build_from_vec() {
-        let invoice_parser = InvoiceParser::new();
+        let transaction_parser = TransactionParser::new();
         let result =
-            invoice_parser.build_from_vec(vec!["15.02.2019", "€", "66.60", "T", "Gas station"]);
+            transaction_parser.build_from_vec(vec!["15.02.2019", "€", "66.60", "T", "Gas station"]);
         match result {
             Ok(i) => {
-                assert_eq!(i.invoice_type(), InvoiceType::Gas);
+                assert_eq!(i.transaction_type(), TransactionType::Gas);
                 assert_eq!(i.amount(), Amount::new(-66.6, Currency::eur()));
                 assert_eq!(i.date(), NaiveDate::from_ymd_opt(2019, 2, 15).unwrap());
                 assert!(i.note().is_some());

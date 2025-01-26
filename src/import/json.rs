@@ -4,7 +4,7 @@ use super::ImportResult;
 use crate::{
     currency::Currency,
     error::{Error, Res},
-    invoice::{amount::Amount, invoice_type::InvoiceType, Invoice},
+    transaction::{amount::Amount, transaction_type::TransactionType, Transaction},
 };
 use std::{fs::File, io::BufReader, path::Path, str::FromStr};
 
@@ -17,17 +17,17 @@ struct TransactionJson {
 }
 
 impl TransactionJson {
-    fn into_transaction<P>(self, mut prepare_transaction: P) -> Res<Option<Invoice>>
+    fn into_transaction<P>(self, mut prepare_transaction: P) -> Res<Option<Transaction>>
     where
-        P: FnMut(Invoice) -> Res<Option<Invoice>>,
+        P: FnMut(Transaction) -> Res<Option<Transaction>>,
     {
         let currency = Currency::from_str(&self.currency)?;
 
-        prepare_transaction(Invoice::new(
+        prepare_transaction(Transaction::new(
             self.date.date_naive(),
             Amount::new(self.amount, currency),
             None,
-            InvoiceType::Unknown,
+            TransactionType::Unknown,
             Some(self.note),
         ))
     }
@@ -38,7 +38,7 @@ pub fn get_transactions<T, P: AsRef<Path>>(
     mut prepare_transaction: T,
 ) -> Result<ImportResult, Error>
 where
-    T: FnMut(Invoice) -> Res<Option<Invoice>>,
+    T: FnMut(Transaction) -> Res<Option<Transaction>>,
 {
     let file = File::open(input_file)?;
     let reader = BufReader::new(file);

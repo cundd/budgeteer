@@ -1,6 +1,6 @@
 use super::WizardTrait;
 use crate::error::Res;
-use crate::invoice::Invoice;
+use crate::transaction::Transaction;
 use dialoguer::theme::Theme;
 use dialoguer::Completion;
 use dialoguer::Input;
@@ -10,8 +10,8 @@ use std::collections::HashSet;
 pub struct NoteWizard {}
 
 impl WizardTrait<String> for NoteWizard {
-    fn read(&self, theme: &dyn Theme, invoices: &[Invoice]) -> Res<String> {
-        let completion = NoteCompletion::new(invoices);
+    fn read(&self, theme: &dyn Theme, transactions: &[Transaction]) -> Res<String> {
+        let completion = NoteCompletion::new(transactions);
 
         Ok(Input::<String>::with_theme(theme)
             .with_prompt("Note")
@@ -26,9 +26,9 @@ struct NoteCompletion {
 }
 
 impl NoteCompletion {
-    fn new(invoices: &[Invoice]) -> Self {
+    fn new(transactions: &[Transaction]) -> Self {
         // Get unique notes
-        let notes = invoices
+        let notes = transactions
             .iter()
             .filter_map(|i| match i.note() {
                 Some(note) if note.is_empty() => None,

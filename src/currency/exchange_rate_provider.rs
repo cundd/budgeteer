@@ -1,4 +1,4 @@
-use crate::invoice::Invoice;
+use crate::transaction::Transaction;
 use chrono::Datelike;
 
 use super::exchange_rate::ExchangeRate;
@@ -12,9 +12,9 @@ impl ExchangeRateProvider {
         Self { exchange_rates }
     }
 
-    pub fn find_exchange_rate(&self, invoice: &Invoice) -> Option<ExchangeRate> {
-        let date = invoice.date;
-        let currency = &invoice.amount.currency.iso;
+    pub fn find_exchange_rate(&self, transaction: &Transaction) -> Option<ExchangeRate> {
+        let date = transaction.date;
+        let currency = &transaction.amount.currency.iso;
         let exchange_rate = self.find_by_date_configuration(
             currency,
             date.year(),

@@ -1,11 +1,11 @@
 mod exchange_rate_repository;
-mod invoice_repository;
+mod transaction_repository;
 
 use crate::error::Error;
 pub use exchange_rate_repository::ExchangeRateRepository;
-pub use invoice_repository::InvoiceRepository;
 use sqlx::SqlitePool;
 use std::path::Path;
+pub use transaction_repository::TransactionRepository;
 
 pub struct Database {
     pub pool: SqlitePool,

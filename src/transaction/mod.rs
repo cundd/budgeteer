@@ -1,6 +1,6 @@
 use crate::currency::Currency;
-use crate::invoice::amount::Amount;
-use crate::invoice::invoice_type::InvoiceType;
+use crate::transaction::amount::Amount;
+use crate::transaction::transaction_type::TransactionType;
 use chrono::prelude::*;
 use main_transaction_data::MainTransactionData;
 use sqlx::prelude::FromRow;
@@ -10,31 +10,31 @@ use std::cmp::Ordering;
 use std::fmt;
 
 pub mod amount;
-pub mod invoice_type;
 pub mod main_transaction_data;
+pub mod transaction_type;
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct Invoice {
+pub struct Transaction {
     pub date: NaiveDate,
     pub amount: Amount,
     pub base_amount: Option<Amount>,
-    pub invoice_type: InvoiceType,
+    pub transaction_type: TransactionType,
     pub note: Option<String>,
 }
 
-impl Invoice {
+impl Transaction {
     pub fn new(
         date: NaiveDate,
         amount: Amount,
         base_amount: Option<Amount>,
-        invoice_type: InvoiceType,
+        transaction_type: TransactionType,
         note: Option<String>,
     ) -> Self {
-        Invoice {
+        Transaction {
             date,
             amount,
             base_amount,
-            invoice_type,
+            transaction_type,
             note,
         }
     }
@@ -55,15 +55,15 @@ impl Invoice {
         self.base_amount.clone()
     }
 
-    pub fn invoice_type(&self) -> InvoiceType {
-        self.invoice_type
+    pub fn transaction_type(&self) -> TransactionType {
+        self.transaction_type
     }
 
     pub fn note(&self) -> Option<String> {
         self.note.clone()
     }
 
-    pub fn with_base_amount(&self, base_amount: Amount) -> Invoice {
+    pub fn with_base_amount(&self, base_amount: Amount) -> Transaction {
         let mut clone = self.clone();
 
         clone.base_amount = Some(base_amount);
@@ -72,7 +72,7 @@ impl Invoice {
     }
 }
 
-impl fmt::Display for Invoice {
+impl fmt::Display for Transaction {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let note = match self.note {
             Some(ref c) => c.to_owned(),
@@ -86,12 +86,12 @@ Betrag:    {}
 Typ:       {}
 Notiz:     {}\
 ",
-            self.date, self.amount, self.invoice_type, note
+            self.date, self.amount, self.transaction_type, note
         )
     }
 }
 
-impl PartialOrd for Invoice {
+impl PartialOrd for Transaction {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         let a_base_amount = self.base_amount();
         let b_base_amount = other.base_amount();
@@ -111,7 +111,7 @@ impl PartialOrd for Invoice {
     }
 }
 
-impl MainTransactionData for Invoice {
+impl MainTransactionData for Transaction {
     fn amount(&self) -> &Amount {
         &self.amount
     }
@@ -121,7 +121,7 @@ impl MainTransactionData for Invoice {
     }
 }
 
-impl MainTransactionData for &Invoice {
+impl MainTransactionData for &Transaction {
     fn amount(&self) -> &Amount {
         &self.amount
     }
@@ -131,13 +131,13 @@ impl MainTransactionData for &Invoice {
     }
 }
 
-pub fn contains_invoice_in_currency(invoices: &[Invoice], currency: &Currency) -> bool {
-    invoices
+pub fn contains_transaction_in_currency(transactions: &[Transaction], currency: &Currency) -> bool {
+    transactions
         .iter()
-        .any(|invoice| invoice.amount_ref().currency_ref() == currency)
+        .any(|transaction| transaction.amount_ref().currency_ref() == currency)
 }
 
-impl FromRow<'_, SqliteRow> for Invoice {
+impl FromRow<'_, SqliteRow> for Transaction {
     fn from_row(row: &SqliteRow) -> sqlx::Result<Self> {
         let currency: Currency = row.try_get("currency")?;
         let amount = Amount::new(row.try_get("amount")?, currency);
@@ -146,7 +146,7 @@ impl FromRow<'_, SqliteRow> for Invoice {
             date: row.try_get("date")?,
             amount,
             base_amount: None,
-            invoice_type: row.try_get("type")?,
+            transaction_type: row.try_get("type")?,
             note: row.try_get("note")?,
         })
     }

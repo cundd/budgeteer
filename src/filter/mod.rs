@@ -1,6 +1,6 @@
 use crate::{
     error::{Error, Res},
-    invoice::invoice_type::InvoiceType,
+    transaction::transaction_type::TransactionType,
 };
 use chrono::{Datelike, NaiveDate};
 use std::fmt;
@@ -9,24 +9,24 @@ use std::fmt;
 pub struct Request {
     pub from: Option<NaiveDate>,
     pub to: Option<NaiveDate>,
-    pub invoice_type: Option<InvoiceType>,
+    pub transaction_type: Option<TransactionType>,
 }
 
 impl Request {
     pub fn new(
         from: Option<NaiveDate>,
         to: Option<NaiveDate>,
-        invoice_type: Option<InvoiceType>,
+        transaction_type: Option<TransactionType>,
     ) -> Self {
         Request {
             from,
             to,
-            invoice_type,
+            transaction_type,
         }
     }
 
     pub fn empty(&self) -> bool {
-        self.from.is_none() && self.to.is_none() && self.invoice_type.is_none()
+        self.from.is_none() && self.to.is_none() && self.transaction_type.is_none()
     }
 
     pub fn parse_from_date(input: &str) -> Res<NaiveDate> {
@@ -87,9 +87,9 @@ impl fmt::Display for Request {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let mut s = String::new();
 
-        if let Some(invoice_type) = self.invoice_type {
+        if let Some(transaction_type) = self.transaction_type {
             s.push_str("Typ:");
-            s.push_str(invoice_type.to_str());
+            s.push_str(transaction_type.to_str());
             if self.from.is_some() || self.to.is_some() {
                 s.push_str(", ");
             }

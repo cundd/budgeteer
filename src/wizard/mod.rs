@@ -1,22 +1,22 @@
 mod amount;
 mod currency;
 mod date;
-mod invoice_type;
 mod note;
+mod transaction_type;
 
 use self::amount::read_amount;
 use self::currency::read_currency;
 use self::date::read_date;
-use self::invoice_type::read_invoice_type;
-use self::invoice_type::read_invoice_type_or_skip;
 use self::note::NoteWizard;
+use self::transaction_type::read_transaction_type;
+use self::transaction_type::read_transaction_type_or_skip;
 use crate::currency::Currency;
 use crate::error::Res;
-use crate::invoice::amount::Amount;
-use crate::invoice::invoice_type::InvoiceType;
-use crate::invoice::Invoice;
-use crate::persistence::InvoiceRepository;
+use crate::persistence::TransactionRepository;
 use crate::printer::PrinterTrait;
+use crate::transaction::amount::Amount;
+use crate::transaction::transaction_type::TransactionType;
+use crate::transaction::Transaction;
 use chrono::NaiveDate;
 use dialoguer::console::Style;
 use dialoguer::theme::{ColorfulTheme, Theme};
@@ -24,7 +24,7 @@ use dialoguer::Confirm;
 
 // Trait for "sub"-wizards
 trait WizardTrait<T> {
-    fn read(&self, theme: &dyn Theme, invoices: &[Invoice]) -> Res<T>;
+    fn read(&self, theme: &dyn Theme, transactions: &[Transaction]) -> Res<T>;
 }
 
 pub struct Wizard {
@@ -51,35 +51,35 @@ impl Wizard {
         &self,
         printer: &mut P,
         base_currency: &Currency,
-        repository: &InvoiceRepository,
-        invoices: &[Invoice],
+        repository: &TransactionRepository,
+        transactions: &[Transaction],
     ) -> Res<()> {
-        println!("Welcome to the invoice wizard");
+        println!("Welcome to the transaction wizard");
 
-        println!("Answer the following questions to insert a new invoice");
+        println!("Answer the following questions to insert a new transaction");
         println!("(Press ctrl+c to exit)");
 
         loop {
-            let invoice = self.create_invoice(invoices)?;
+            let transaction = self.create_transaction(transactions)?;
 
             println!();
-            println!("Read the following invoice:");
-            printer.print_invoice(base_currency, &invoice);
+            println!("Read the following transaction:");
+            printer.print_transaction(base_currency, &transaction);
 
             let confirm = Confirm::with_theme(self.theme.as_ref());
             if confirm
                 .clone()
-                .with_prompt("Save this invoice?")
+                .with_prompt("Save this transaction?")
                 .default(true)
                 .interact()?
             {
-                match repository.add(&invoice).await {
-                    Ok(id) => println!("Saved the new invoice #{}", id),
-                    Err(_) => eprintln!("Could not store the invoice"),
+                match repository.add(&transaction).await {
+                    Ok(id) => println!("Saved the new transaction #{}", id),
+                    Err(_) => eprintln!("Could not store the transaction"),
                 }
 
                 if !confirm
-                    .with_prompt("Do you want to insert another invoice?")
+                    .with_prompt("Do you want to insert another transaction?")
                     .default(true)
                     .interact()?
                 {
@@ -87,7 +87,7 @@ impl Wizard {
                 }
             } else {
                 println!();
-                println!("Build another invoice instead");
+                println!("Build another transaction instead");
             }
         }
     }
@@ -104,27 +104,30 @@ impl Wizard {
         read_amount(self.theme.as_ref())
     }
 
-    pub fn read_invoice_type(&self, allow_unknown: bool) -> Res<InvoiceType> {
-        read_invoice_type(self.theme.as_ref(), allow_unknown)
+    pub fn read_transaction_type(&self, allow_unknown: bool) -> Res<TransactionType> {
+        read_transaction_type(self.theme.as_ref(), allow_unknown)
     }
 
-    pub fn read_invoice_type_or_skip(&self, allow_unknown: bool) -> Res<Option<InvoiceType>> {
-        read_invoice_type_or_skip(self.theme.as_ref(), allow_unknown)
+    pub fn read_transaction_type_or_skip(
+        &self,
+        allow_unknown: bool,
+    ) -> Res<Option<TransactionType>> {
+        read_transaction_type_or_skip(self.theme.as_ref(), allow_unknown)
     }
 
-    fn create_invoice(&self, invoices: &[Invoice]) -> Res<Invoice> {
+    fn create_transaction(&self, transactions: &[Transaction]) -> Res<Transaction> {
         let theme = self.theme.as_ref();
         let date = self.read_date()?;
         let currency = self.read_currency()?;
         let amount = self.read_amount()?;
-        let invoice_type = self.read_invoice_type(false)?;
-        let note = self.note_wizard.read(theme, invoices)?;
+        let transaction_type = self.read_transaction_type(false)?;
+        let note = self.note_wizard.read(theme, transactions)?;
 
-        Ok(Invoice::new(
+        Ok(Transaction::new(
             date,
             Amount::new(amount, currency),
             None,
-            invoice_type,
+            transaction_type,
             Some(note),
         ))
     }

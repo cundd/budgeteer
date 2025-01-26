@@ -1,9 +1,9 @@
 use crate::calculator::Calculator;
 use crate::currency::{currency_data, Currency};
 use crate::filter::Request;
-use crate::invoice::invoice_type::InvoiceType;
-use crate::invoice::{contains_invoice_in_currency, Invoice};
 use crate::month::Month;
+use crate::transaction::transaction_type::TransactionType;
+use crate::transaction::{contains_transaction_in_currency, Transaction};
 use crossterm::style::Color;
 use crossterm::style::Stylize;
 use std::collections::HashMap;
@@ -13,19 +13,24 @@ use std::io::{stdout, Write};
 static STDOUT_WRITE_ERROR: &str = "Could not write to stdout";
 
 pub trait PrinterTrait {
-    fn print_invoices(&mut self, base_currency: &Currency, invoices: &[Invoice]) {
-        for invoice in invoices {
-            self.print_invoice(base_currency, invoice)
+    fn print_transactions(&mut self, base_currency: &Currency, transactions: &[Transaction]) {
+        for transaction in transactions {
+            self.print_transaction(base_currency, transaction)
         }
         self.print_newline()
     }
 
-    fn print_invoice(&mut self, base_currency: &Currency, invoice: &Invoice);
+    fn print_transaction(&mut self, base_currency: &Currency, transaction: &Transaction);
 
     fn print_filter_request(&mut self, filter_request: &Request);
 
-    fn print_sum(&mut self, base_currency: &Currency, invoices: &[Invoice]);
-    fn print_month_sum(&mut self, month: Month, base_currency: &Currency, invoices: &[Invoice]);
+    fn print_sum(&mut self, base_currency: &Currency, transactions: &[Transaction]);
+    fn print_month_sum(
+        &mut self,
+        month: Month,
+        base_currency: &Currency,
+        transactions: &[Transaction],
+    );
     fn print_header<S: AsRef<str>>(&mut self, text: S);
     fn print_subheader<S: AsRef<str>>(&mut self, text: S);
     fn print_newline(&mut self);
@@ -45,12 +50,12 @@ impl Printer {
         write!(self.output, "{}", text.as_ref()).expect(STDOUT_WRITE_ERROR)
     }
 
-    fn print_type_sum(&mut self, base_currency: &Currency, invoices: &[Invoice]) {
-        // Skip currencies without any Invoice
+    fn print_type_sum(&mut self, base_currency: &Currency, transactions: &[Transaction]) {
+        // Skip currencies without any Transaction
         let currencies_to_output: Vec<Currency> = currency_data::all()
             .into_iter()
             .filter_map(|(_, currency)| {
-                if contains_invoice_in_currency(invoices, &currency) {
+                if contains_transaction_in_currency(transactions, &currency) {
                     Some(currency)
                 } else {
                     None
@@ -60,14 +65,14 @@ impl Printer {
 
         self.print_type_sum_header(&currencies_to_output);
 
-        for invoice_type in InvoiceType::all() {
-            let sum = Calculator::sum_for_type(invoices, invoice_type);
+        for transaction_type in TransactionType::all() {
+            let sum = Calculator::sum_for_type(transactions, transaction_type);
 
             self.print(style_for_type(
-                invoice_type,
+                transaction_type,
                 format!(
                     " {:width$}│ {:<4} {: >10.2} ",
-                    format!("{}", invoice_type),
+                    format!("{}", transaction_type),
                     base_currency.symbol,
                     sum,
                     width = 22
@@ -77,9 +82,10 @@ impl Printer {
             ));
 
             for currency in &currencies_to_output {
-                let sum = Calculator::sum_for_type_and_currency(invoices, invoice_type, currency);
+                let sum =
+                    Calculator::sum_for_type_and_currency(transactions, transaction_type, currency);
                 self.print(style_for_type(
-                    invoice_type,
+                    transaction_type,
                     format!("│ {:<3} {: >9.2} ", currency.symbol, sum),
                     false,
                     true,
@@ -87,8 +93,8 @@ impl Printer {
             }
 
             self.print(style_for_type(
-                invoice_type,
-                format!(" {} ", invoice_type.identifier()),
+                transaction_type,
+                format!(" {} ", transaction_type.identifier()),
                 true,
                 true,
             ));
@@ -97,18 +103,18 @@ impl Printer {
     }
 
     /// Print the "bar chart"
-    fn print_bar_chart(&mut self, _base_currency: &Currency, invoices: &[Invoice]) {
+    fn print_bar_chart(&mut self, _base_currency: &Currency, transactions: &[Transaction]) {
         let mut sum_map = HashMap::new();
-        for invoice_type in InvoiceType::all() {
-            let sum = Calculator::sum_for_type(invoices, invoice_type);
-            sum_map.insert(invoice_type, sum);
+        for transaction_type in TransactionType::all() {
+            let sum = Calculator::sum_for_type(transactions, transaction_type);
+            sum_map.insert(transaction_type, sum);
         }
 
-        let total: f64 = Calculator::sum(invoices);
+        let total: f64 = Calculator::sum(transactions);
 
-        // Use `InvoiceType::all()` again, to maintain the sorting
-        for invoice_type in InvoiceType::all() {
-            let sum = sum_map[&invoice_type];
+        // Use `TransactionType::all()` again, to maintain the sorting
+        for transaction_type in TransactionType::all() {
+            let sum = sum_map[&transaction_type];
             let percent = if total != 0.0 {
                 100.0 * sum / total
             } else {
@@ -121,17 +127,17 @@ impl Printer {
             } else {
                 "0%".to_string()
             };
-            let text = format!("{}: {}", invoice_type, percent_formatted);
+            let text = format!("{}: {}", transaction_type, percent_formatted);
             if text.len() <= width {
                 self.print(style_for_type(
-                    invoice_type,
+                    transaction_type,
                     format!(" {:<width$}", text),
                     false,
                     true,
                 ));
             } else {
                 self.print(style_for_type(
-                    invoice_type,
+                    transaction_type,
                     format!(" {}", &text[..width]),
                     false,
                     true,
@@ -159,32 +165,34 @@ impl Printer {
         self.print_newline();
     }
 
-    fn print_grand_total(&mut self, base_currency: &Currency, invoices: &[Invoice]) {
+    fn print_grand_total(&mut self, base_currency: &Currency, transactions: &[Transaction]) {
         writeln!(
             self.output,
             "TOTAL: {} {:.2}",
             base_currency,
-            Calculator::sum(invoices)
+            Calculator::sum(transactions)
         )
         .expect(STDOUT_WRITE_ERROR);
     }
 }
 
 impl PrinterTrait for Printer {
-    fn print_invoice(&mut self, base_currency: &Currency, invoice: &Invoice) {
-        let note = get_prepared_note(invoice);
+    fn print_transaction(&mut self, base_currency: &Currency, transaction: &Transaction) {
+        let note = get_prepared_note(transaction);
 
-        let amount_string = if &invoice.amount().currency() != base_currency {
-            match invoice.base_amount() {
-                Some(converted_amount) => format!("{} ({})", invoice.amount(), converted_amount),
-                None => format!("{}", invoice.amount()),
+        let amount_string = if &transaction.amount().currency() != base_currency {
+            match transaction.base_amount() {
+                Some(converted_amount) => {
+                    format!("{} ({})", transaction.amount(), converted_amount)
+                }
+                None => format!("{}", transaction.amount()),
             }
         } else {
-            format!("{}", invoice.amount())
+            format!("{}", transaction.amount())
         };
 
-        let invoice_type = invoice.invoice_type();
-        let date = invoice.date().format("%A %d.%m.%Y");
+        let transaction_type = transaction.transaction_type();
+        let date = transaction.date().format("%A %d.%m.%Y");
 
         writeln!(
             self.output,
@@ -193,10 +201,10 @@ Betrag      : {}
 Typ         : {}
 Notiz       : {}
 "#,
-            style_for_type(invoice_type, "   ", false, true),
+            style_for_type(transaction_type, "   ", false, true),
             date,
             amount_string,
-            invoice_type,
+            transaction_type,
             note,
         )
         .expect(STDOUT_WRITE_ERROR);
@@ -212,29 +220,34 @@ Notiz       : {}
         self.print_newline();
     }
 
-    fn print_sum(&mut self, base_currency: &Currency, invoices: &[Invoice]) {
-        self.print_type_sum(base_currency, invoices);
+    fn print_sum(&mut self, base_currency: &Currency, transactions: &[Transaction]) {
+        self.print_type_sum(base_currency, transactions);
         self.print_newline();
         self.println(style_header(format!(" {:<50}", "Chart")));
-        self.print_bar_chart(base_currency, invoices);
+        self.print_bar_chart(base_currency, transactions);
         self.println("-----------------------------------------");
-        self.print_grand_total(base_currency, invoices);
+        self.print_grand_total(base_currency, transactions);
     }
 
-    fn print_month_sum(&mut self, month: Month, base_currency: &Currency, invoices: &[Invoice]) {
-        if !invoices.is_empty() {
-            let major_types = Calculator::major_types(invoices);
+    fn print_month_sum(
+        &mut self,
+        month: Month,
+        base_currency: &Currency,
+        transactions: &[Transaction],
+    ) {
+        if !transactions.is_empty() {
+            let major_types = Calculator::major_types(transactions);
             writeln!(
                 self.output,
                 "{:width$}: {} {: >8.2} {}",
                 format!("{}", month),
                 base_currency,
-                Calculator::sum(invoices),
+                Calculator::sum(transactions),
                 style_for_type(
-                    major_types.max_expenses.invoice_type,
+                    major_types.max_expenses.transaction_type,
                     format!(
                         " {} {: >8.2} ",
-                        major_types.max_expenses.invoice_type.identifier(),
+                        major_types.max_expenses.transaction_type.identifier(),
                         major_types.max_expenses.value
                     ),
                     true,
@@ -275,7 +288,7 @@ Notiz       : {}
 }
 
 fn style_for_type<T: Into<String>>(
-    invoice_type: InvoiceType,
+    transaction_type: TransactionType,
     text: T,
     fg: bool,
     bg: bool,
@@ -287,12 +300,12 @@ fn style_for_type<T: Into<String>>(
     }
 
     if fg && bg {
-        text.with(color_for_type(invoice_type, false))
-            .on(color_for_type(invoice_type, true))
+        text.with(color_for_type(transaction_type, false))
+            .on(color_for_type(transaction_type, true))
     } else if fg {
-        text.with(color_for_type(invoice_type, false))
+        text.with(color_for_type(transaction_type, false))
     } else {
-        text.on(color_for_type(invoice_type, true))
+        text.on(color_for_type(transaction_type, true))
     }
     .to_string()
 }
@@ -301,125 +314,125 @@ fn style_header<T: Into<String>>(text: T) -> String {
     text.into().with(Color::White).on(Color::Black).to_string()
 }
 
-fn color_for_type(invoice_type: InvoiceType, light: bool) -> Color {
+fn color_for_type(transaction_type: TransactionType, light: bool) -> Color {
     if !has_true_color_support() {
         return if light {
-            match invoice_type {
-                InvoiceType::Car => Color::AnsiValue(9),
-                InvoiceType::Clothes => Color::AnsiValue(10),
-                InvoiceType::Eat => Color::AnsiValue(11),
-                InvoiceType::Gas => Color::AnsiValue(12),
-                InvoiceType::Fun => Color::AnsiValue(13),
-                InvoiceType::Health => Color::AnsiValue(14),
-                InvoiceType::Home => Color::AnsiValue(73),
-                InvoiceType::Telecommunication => Color::AnsiValue(27),
-                InvoiceType::Unknown => Color::AnsiValue(57),
+            match transaction_type {
+                TransactionType::Car => Color::AnsiValue(9),
+                TransactionType::Clothes => Color::AnsiValue(10),
+                TransactionType::Eat => Color::AnsiValue(11),
+                TransactionType::Gas => Color::AnsiValue(12),
+                TransactionType::Fun => Color::AnsiValue(13),
+                TransactionType::Health => Color::AnsiValue(14),
+                TransactionType::Home => Color::AnsiValue(73),
+                TransactionType::Telecommunication => Color::AnsiValue(27),
+                TransactionType::Unknown => Color::AnsiValue(57),
             }
         } else {
-            match invoice_type {
-                InvoiceType::Car => Color::AnsiValue(1),
-                InvoiceType::Clothes => Color::AnsiValue(2),
-                InvoiceType::Eat => Color::AnsiValue(3),
-                InvoiceType::Gas => Color::AnsiValue(4),
-                InvoiceType::Fun => Color::AnsiValue(5),
-                InvoiceType::Health => Color::AnsiValue(6),
-                InvoiceType::Home => Color::AnsiValue(17),
-                InvoiceType::Telecommunication => Color::AnsiValue(17),
-                InvoiceType::Unknown => Color::AnsiValue(53),
+            match transaction_type {
+                TransactionType::Car => Color::AnsiValue(1),
+                TransactionType::Clothes => Color::AnsiValue(2),
+                TransactionType::Eat => Color::AnsiValue(3),
+                TransactionType::Gas => Color::AnsiValue(4),
+                TransactionType::Fun => Color::AnsiValue(5),
+                TransactionType::Health => Color::AnsiValue(6),
+                TransactionType::Home => Color::AnsiValue(17),
+                TransactionType::Telecommunication => Color::AnsiValue(17),
+                TransactionType::Unknown => Color::AnsiValue(53),
             }
         };
     }
     if light {
-        match invoice_type {
-            InvoiceType::Car => Color::Rgb {
+        match transaction_type {
+            TransactionType::Car => Color::Rgb {
                 r: 112,
                 g: 255,
                 b: 81,
             },
-            InvoiceType::Clothes => Color::Rgb {
+            TransactionType::Clothes => Color::Rgb {
                 r: 177,
                 g: 255,
                 b: 79,
             },
-            InvoiceType::Eat => Color::Rgb {
+            TransactionType::Eat => Color::Rgb {
                 r: 225,
                 g: 255,
                 b: 79,
             },
-            InvoiceType::Gas => Color::Rgb {
+            TransactionType::Gas => Color::Rgb {
                 r: 255,
                 g: 237,
                 b: 61,
             },
-            InvoiceType::Fun => Color::Rgb {
+            TransactionType::Fun => Color::Rgb {
                 r: 255,
                 g: 200,
                 b: 53,
             },
-            InvoiceType::Health => Color::Rgb {
+            TransactionType::Health => Color::Rgb {
                 r: 255,
                 g: 173,
                 b: 45,
             },
-            InvoiceType::Home => Color::Rgb {
+            TransactionType::Home => Color::Rgb {
                 r: 255,
                 g: 136,
                 b: 126,
             },
-            InvoiceType::Telecommunication => Color::Rgb {
+            TransactionType::Telecommunication => Color::Rgb {
                 r: 255,
                 g: 120,
                 b: 186,
             },
-            InvoiceType::Unknown => Color::Rgb {
+            TransactionType::Unknown => Color::Rgb {
                 r: 215,
                 g: 151,
                 b: 255,
             },
         }
     } else {
-        match invoice_type {
-            InvoiceType::Car => Color::Rgb {
+        match transaction_type {
+            TransactionType::Car => Color::Rgb {
                 r: 84,
                 g: 189,
                 b: 60,
             },
-            InvoiceType::Clothes => Color::Rgb {
+            TransactionType::Clothes => Color::Rgb {
                 r: 132,
                 g: 189,
                 b: 58,
             },
-            InvoiceType::Eat => Color::Rgb {
+            TransactionType::Eat => Color::Rgb {
                 r: 167,
                 g: 189,
                 b: 58,
             },
-            InvoiceType::Gas => Color::Rgb {
+            TransactionType::Gas => Color::Rgb {
                 r: 189,
                 g: 174,
                 b: 45,
             },
-            InvoiceType::Fun => Color::Rgb {
+            TransactionType::Fun => Color::Rgb {
                 r: 189,
                 g: 146,
                 b: 40,
             },
-            InvoiceType::Health => Color::Rgb {
+            TransactionType::Health => Color::Rgb {
                 r: 189,
                 g: 127,
                 b: 34,
             },
-            InvoiceType::Home => Color::Rgb {
+            TransactionType::Home => Color::Rgb {
                 r: 189,
                 g: 101,
                 b: 94,
             },
-            InvoiceType::Telecommunication => Color::Rgb {
+            TransactionType::Telecommunication => Color::Rgb {
                 r: 189,
                 g: 91,
                 b: 140,
             },
-            InvoiceType::Unknown => Color::Rgb {
+            TransactionType::Unknown => Color::Rgb {
                 r: 159,
                 g: 113,
                 b: 189,
@@ -435,8 +448,8 @@ fn has_true_color_support() -> bool {
     }
 }
 
-fn get_prepared_note(invoice: &Invoice) -> String {
-    if let Some(note) = invoice.note() {
+fn get_prepared_note(transaction: &Transaction) -> String {
+    if let Some(note) = transaction.note() {
         let mut buffer: Vec<String> = vec![];
 
         for l in note.split("<br />") {

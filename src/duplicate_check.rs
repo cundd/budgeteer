@@ -1,14 +1,14 @@
 use chrono::Days;
 
-use crate::invoice::{main_transaction_data::MainTransactionData, Invoice};
+use crate::transaction::{main_transaction_data::MainTransactionData, Transaction};
 
 pub struct DuplicateChecker {}
 
 impl DuplicateChecker {
     pub fn get_possible_duplicates<'a, T: MainTransactionData>(
         transaction: &T,
-        transactions: &'a [Invoice],
-    ) -> Vec<&'a Invoice> {
+        transactions: &'a [Transaction],
+    ) -> Vec<&'a Transaction> {
         transactions
             .iter()
             .filter(|item| is_possible_duplicate(item, transaction))
@@ -41,7 +41,7 @@ mod tests {
     use super::*;
     use crate::{
         currency::Currency,
-        invoice::{amount::Amount, main_transaction_data::MainTransactionData},
+        transaction::{amount::Amount, main_transaction_data::MainTransactionData},
     };
     use chrono::{NaiveDate, Utc};
 
