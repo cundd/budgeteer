@@ -288,6 +288,7 @@ fn color_for_type(transaction_type: TransactionType, light: bool) -> Color {
     if !has_true_color_support() {
         return if light {
             match transaction_type {
+                TransactionType::Body => Color::AnsiValue(81),
                 TransactionType::Car => Color::AnsiValue(9),
                 TransactionType::Clothes => Color::AnsiValue(10),
                 TransactionType::Eat => Color::AnsiValue(11),
@@ -296,10 +297,12 @@ fn color_for_type(transaction_type: TransactionType, light: bool) -> Color {
                 TransactionType::Health => Color::AnsiValue(14),
                 TransactionType::Home => Color::AnsiValue(73),
                 TransactionType::Telecommunication => Color::AnsiValue(27),
+                TransactionType::Donation => Color::AnsiValue(207),
                 TransactionType::Unknown => Color::AnsiValue(57),
             }
         } else {
             match transaction_type {
+                TransactionType::Body => Color::AnsiValue(39),
                 TransactionType::Car => Color::AnsiValue(1),
                 TransactionType::Clothes => Color::AnsiValue(2),
                 TransactionType::Eat => Color::AnsiValue(3),
@@ -308,12 +311,18 @@ fn color_for_type(transaction_type: TransactionType, light: bool) -> Color {
                 TransactionType::Health => Color::AnsiValue(6),
                 TransactionType::Home => Color::AnsiValue(17),
                 TransactionType::Telecommunication => Color::AnsiValue(17),
+                TransactionType::Donation => Color::AnsiValue(171),
                 TransactionType::Unknown => Color::AnsiValue(53),
             }
         };
     }
     if light {
         match transaction_type {
+            TransactionType::Body => Color::Rgb {
+                r: 56,
+                g: 255,
+                b: 219,
+            },
             TransactionType::Car => Color::Rgb {
                 r: 112,
                 g: 255,
@@ -354,14 +363,24 @@ fn color_for_type(transaction_type: TransactionType, light: bool) -> Color {
                 g: 120,
                 b: 186,
             },
-            TransactionType::Unknown => Color::Rgb {
+            TransactionType::Donation => Color::Rgb {
                 r: 215,
                 g: 151,
+                b: 255,
+            },
+            TransactionType::Unknown => Color::Rgb {
+                r: 94,
+                g: 228,
                 b: 255,
             },
         }
     } else {
         match transaction_type {
+            TransactionType::Body => Color::Rgb {
+                r: 17,
+                g: 204,
+                b: 170,
+            },
             TransactionType::Car => Color::Rgb {
                 r: 84,
                 g: 189,
@@ -402,10 +421,15 @@ fn color_for_type(transaction_type: TransactionType, light: bool) -> Color {
                 g: 91,
                 b: 140,
             },
-            TransactionType::Unknown => Color::Rgb {
+            TransactionType::Donation => Color::Rgb {
                 r: 159,
                 g: 113,
                 b: 189,
+            },
+            TransactionType::Unknown => Color::Rgb {
+                r: 12,
+                g: 170,
+                b: 201,
             },
         }
     }

@@ -1,6 +1,6 @@
 use crate::currency::Currency;
 use crate::transaction::amount::Amount;
-use crate::transaction::transaction_type::TransactionType;
+use crate::transaction::transaction_type::{TransactionType, NUMBER_OF_TYPES};
 use crate::transaction::Transaction;
 
 pub struct Calculator {}
@@ -158,8 +158,9 @@ impl IncomeAndExpenses {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 struct TransactionTypeScore {
+    body: IncomeAndExpenses,
     car: IncomeAndExpenses,
     clothes: IncomeAndExpenses,
     eat: IncomeAndExpenses,
@@ -168,22 +169,13 @@ struct TransactionTypeScore {
     health: IncomeAndExpenses,
     home: IncomeAndExpenses,
     telecommunication: IncomeAndExpenses,
+    donation: IncomeAndExpenses,
     unknown: IncomeAndExpenses,
 }
 
 impl TransactionTypeScore {
     pub fn new() -> Self {
-        TransactionTypeScore {
-            car: IncomeAndExpenses::default(),
-            clothes: IncomeAndExpenses::default(),
-            eat: IncomeAndExpenses::default(),
-            gas: IncomeAndExpenses::default(),
-            fun: IncomeAndExpenses::default(),
-            health: IncomeAndExpenses::default(),
-            home: IncomeAndExpenses::default(),
-            telecommunication: IncomeAndExpenses::default(),
-            unknown: IncomeAndExpenses::default(),
-        }
+        TransactionTypeScore::default()
     }
 
     fn push(&mut self, transaction_type: TransactionType, amount: Option<Amount>) {
@@ -193,6 +185,7 @@ impl TransactionTypeScore {
         };
 
         match transaction_type {
+            TransactionType::Body => self.body.push(amount),
             TransactionType::Car => self.car.push(amount),
             TransactionType::Clothes => self.clothes.push(amount),
             TransactionType::Eat => self.eat.push(amount),
@@ -201,6 +194,7 @@ impl TransactionTypeScore {
             TransactionType::Health => self.health.push(amount),
             TransactionType::Home => self.home.push(amount),
             TransactionType::Telecommunication => self.telecommunication.push(amount),
+            TransactionType::Donation => self.donation.push(amount),
             TransactionType::Unknown => self.unknown.push(amount),
         }
     }
@@ -209,10 +203,11 @@ impl TransactionTypeScore {
 impl IntoIterator for TransactionTypeScore {
     type Item = (TransactionType, IncomeAndExpenses);
 
-    type IntoIter = std::array::IntoIter<(TransactionType, IncomeAndExpenses), 9>;
+    type IntoIter = std::array::IntoIter<(TransactionType, IncomeAndExpenses), NUMBER_OF_TYPES>;
 
     fn into_iter(self) -> Self::IntoIter {
         [
+            (TransactionType::Body, self.body),
             (TransactionType::Car, self.car),
             (TransactionType::Clothes, self.clothes),
             (TransactionType::Eat, self.eat),
@@ -221,6 +216,7 @@ impl IntoIterator for TransactionTypeScore {
             (TransactionType::Health, self.health),
             (TransactionType::Home, self.home),
             (TransactionType::Telecommunication, self.telecommunication),
+            (TransactionType::Donation, self.donation),
             (TransactionType::Unknown, self.unknown),
         ]
         .into_iter()

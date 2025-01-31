@@ -2,12 +2,16 @@ use crate::error::Error;
 use std::str::FromStr;
 use std::{char, fmt};
 
+pub const NUMBER_OF_TYPES: usize = 11;
+
 #[derive(Clone, PartialOrd, PartialEq, Eq, Copy, Debug, Hash, clap::ValueEnum, sqlx::Type)]
 #[repr(u8)]
 pub enum TransactionType {
+    // "B" => Body / Cosmetics
+    Body = b'B',
     // "A" => Car / Auto
     Car = b'A',
-    // "C" => Clothes, Body & Cosmetics / Kleidung
+    // "C" => Clothes / Kleidung
     Clothes = b'C',
     // "E" => Eat / Essen
     Eat = b'E',
@@ -21,6 +25,8 @@ pub enum TransactionType {
     Home = b'H',
     // "I" => Internet / Handy / TV
     Telecommunication = b'I',
+    // "D" => Spende
+    Donation = b'D',
 
     // Unknown
     Unknown = b'U',
@@ -30,11 +36,13 @@ impl TransactionType {
     pub fn from_str(input: &str) -> Self {
         match input.to_uppercase().as_str() {
             "A" | "CAR" | "AUTO" => TransactionType::Car,
-            "C" | "K" | "CLOTHES" | "BODY" | "KLEIDUNG" => TransactionType::Clothes,
+            "B" | "BODY" | "COSMETICS" => TransactionType::Body,
+            "C" | "K" | "CLOTHES" | "KLEIDUNG" => TransactionType::Clothes,
             "E" | "EAT" | "ESSEN" => TransactionType::Eat,
             "F" | "FUN" | "HOBBY" => TransactionType::Fun,
             "T" | "GAS" | "TANKEN" => TransactionType::Gas,
             "G" | "HEALTH" | "GESUNDHEIT" => TransactionType::Health,
+            "D" | "DONATION" | "SPENDE" => TransactionType::Donation,
             "H" | "HOME" | "HAUS" => TransactionType::Home,
             "I" | "TELECOMMUNICATION" | "INTERNET" | "HANDY" | "TV" => {
                 TransactionType::Telecommunication
@@ -48,8 +56,9 @@ impl TransactionType {
     }
 
     /// Return all transaction types except `TransactionType::Unknown`
-    pub fn all_known() -> [TransactionType; 8] {
+    pub fn all_known() -> [TransactionType; NUMBER_OF_TYPES - 1] {
         [
+            TransactionType::Body,
             TransactionType::Car,
             TransactionType::Clothes,
             TransactionType::Eat,
@@ -58,12 +67,14 @@ impl TransactionType {
             TransactionType::Health,
             TransactionType::Home,
             TransactionType::Telecommunication,
+            TransactionType::Donation,
         ]
     }
 
     /// Return all transaction types (including `TransactionType::Unknown`)
-    pub fn all() -> [TransactionType; 9] {
+    pub fn all() -> [TransactionType; NUMBER_OF_TYPES] {
         [
+            TransactionType::Body,
             TransactionType::Car,
             TransactionType::Clothes,
             TransactionType::Eat,
@@ -72,20 +83,23 @@ impl TransactionType {
             TransactionType::Health,
             TransactionType::Home,
             TransactionType::Telecommunication,
+            TransactionType::Donation,
             TransactionType::Unknown,
         ]
     }
 
     pub fn to_str(self) -> &'static str {
         match self {
+            TransactionType::Body => "Body / Cosmetics",
             TransactionType::Car => "Car / Auto",
             TransactionType::Clothes => "Clothes / Kleidung",
             TransactionType::Eat => "Food / Essen",
             TransactionType::Fun => "Fun / Freunde / Hobby",
             TransactionType::Gas => "Gas / Tanken",
             TransactionType::Health => "Health / Gesundheit",
-            TransactionType::Home => "Home / Hause",
+            TransactionType::Home => "Home / Haus",
             TransactionType::Telecommunication => "Internet / Handy / TV",
+            TransactionType::Donation => "Donation / Spende",
             TransactionType::Unknown => "Diverse",
         }
     }
