@@ -177,15 +177,17 @@ Notiz       : {}
     }
 
     fn print_sum(&mut self, base_currency: &Currency, transactions: &[Transaction]) {
-        self.print_type_sum(base_currency, transactions);
-        self.print_newline();
-
         let terminal_width = self.terminal_width();
         let header_width = terminal_width - 1;
-        self.println(style_header(format!(" {:<header_width$}", "Chart")));
-        print_bar_chart(self, base_currency, transactions);
-        self.println("-".repeat(terminal_width));
+
+        self.print_type_sum(base_currency, transactions);
+        self.print_newline();
         self.print_grand_total(base_currency, transactions);
+        self.println("─".repeat(terminal_width));
+        self.print_newline();
+
+        self.println(style_header(format!(" {:<header_width$}", "Chart")));
+        let _ = print_bar_chart(self, base_currency, transactions);
     }
 
     fn print_month_sum(
