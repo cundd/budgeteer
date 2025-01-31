@@ -55,9 +55,9 @@ impl Wizard {
         repository: &TransactionRepository,
         transactions: &[Transaction],
     ) -> Res<()> {
-        printer.print_header("Welcome to the transaction wizard");
+        printer.print_header("Welcome to the invoice wizard");
 
-        printer.println("Answer the following questions to insert a new transaction");
+        printer.println("Answer the following questions to insert a new invoice");
         printer.println("(Press ctrl+c to exit)");
 
         loop {
@@ -129,7 +129,9 @@ impl Wizard {
         let theme = self.theme.as_ref();
         let date = self.read_date()?;
         let currency = self.read_currency()?;
-        let amount = self.read_amount()?;
+
+        // Multiply be -1.0 to treat the input as expense
+        let amount = -1.0 * self.read_amount()?;
         let transaction_type = self.read_transaction_type(false)?;
         let note = self.note_wizard.read(theme, transactions)?;
 
