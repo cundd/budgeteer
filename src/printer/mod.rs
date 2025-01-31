@@ -1,12 +1,14 @@
+mod chart;
+
 use crate::calculator::Calculator;
 use crate::currency::{currency_data, Currency};
 use crate::filter::Request;
 use crate::month::Month;
 use crate::transaction::transaction_type::TransactionType;
 use crate::transaction::{contains_transaction_in_currency, Transaction};
+use chart::print_bar_chart;
 use crossterm::style::Color;
 use crossterm::style::Stylize;
-use std::collections::HashMap;
 use std::env;
 use std::io::{stdout, Write};
 
@@ -35,6 +37,7 @@ pub trait PrinterTrait {
     fn print_subheader<S: AsRef<str>>(&mut self, text: S);
     fn print_warning<S: AsRef<str>>(&mut self, text: S);
     fn print_newline(&mut self);
+    fn print<S: AsRef<str>>(&mut self, text: S);
     fn println<S: AsRef<str>>(&mut self, text: S);
 }
 
@@ -46,11 +49,6 @@ impl Printer {
     pub fn new() -> Self {
         Printer { output: stdout() }
     }
-
-    fn print<S: AsRef<str>>(&mut self, text: S) {
-        write!(self.output, "{}", text.as_ref()).expect(STDOUT_WRITE_ERROR)
-    }
-
     fn print_type_sum(&mut self, base_currency: &Currency, transactions: &[Transaction]) {
         // Skip currencies without any Transaction
         let currencies_to_output: Vec<Currency> = currency_data::all()
@@ -103,53 +101,6 @@ impl Printer {
         }
     }
 
-    /// Print the "bar chart"
-    fn print_bar_chart(&mut self, _base_currency: &Currency, transactions: &[Transaction]) {
-        let mut sum_map = HashMap::new();
-        for transaction_type in TransactionType::all() {
-            let sum = Calculator::sum_for_type(transactions, transaction_type);
-            sum_map.insert(transaction_type, sum);
-        }
-
-        let total: f64 = Calculator::sum(transactions);
-
-        // Use `TransactionType::all()` again, to maintain the sorting
-        for transaction_type in TransactionType::all() {
-            let sum = sum_map[&transaction_type];
-            let percent = if total != 0.0 {
-                100.0 * sum / total
-            } else {
-                0.0
-            };
-
-            let width = (percent.ceil() / 2.0) as usize;
-            let percent_formatted = if percent != 0.0 {
-                format!("{:.2}%", percent)
-            } else {
-                "0%".to_string()
-            };
-            let text = format!("{}: {}", transaction_type, percent_formatted);
-            if text.len() <= width {
-                self.print(style_for_type(
-                    transaction_type,
-                    format!(" {:<width$}", text),
-                    false,
-                    true,
-                ));
-            } else {
-                self.print(style_for_type(
-                    transaction_type,
-                    format!(" {}", &text[..width]),
-                    false,
-                    true,
-                ));
-                write!(self.output, "{}", &text[width..]).expect(STDOUT_WRITE_ERROR);
-            }
-
-            self.print_newline();
-        }
-    }
-
     fn print_type_sum_header(&mut self, currencies_to_output: &[Currency]) {
         self.print(style_header(format!(
             " {:width$}│ {} ",
@@ -174,6 +125,10 @@ impl Printer {
             Calculator::sum(transactions)
         )
         .expect(STDOUT_WRITE_ERROR);
+    }
+
+    fn terminal_width(&self) -> usize {
+        crossterm::terminal::size().map_or(50, |s| s.0) as usize
     }
 }
 
@@ -224,9 +179,12 @@ Notiz       : {}
     fn print_sum(&mut self, base_currency: &Currency, transactions: &[Transaction]) {
         self.print_type_sum(base_currency, transactions);
         self.print_newline();
-        self.println(style_header(format!(" {:<50}", "Chart")));
-        self.print_bar_chart(base_currency, transactions);
-        self.println("-----------------------------------------");
+
+        let terminal_width = self.terminal_width();
+        let header_width = terminal_width - 1;
+        self.println(style_header(format!(" {:<header_width$}", "Chart")));
+        print_bar_chart(self, base_currency, transactions);
+        self.println("-".repeat(terminal_width));
         self.print_grand_total(base_currency, transactions);
     }
 
@@ -275,12 +233,17 @@ Notiz       : {}
         self.println("")
     }
 
+    fn print<S: AsRef<str>>(&mut self, text: S) {
+        write!(self.output, "{}", text.as_ref()).expect(STDOUT_WRITE_ERROR)
+    }
+
     fn println<S: AsRef<str>>(&mut self, text: S) {
         writeln!(self.output, "{}", text.as_ref()).expect(STDOUT_WRITE_ERROR)
     }
 
     fn print_header<S: AsRef<str>>(&mut self, text: S) {
-        self.println(style_header(text.as_ref()))
+        let terminal_width = self.terminal_width();
+        self.println(style_header(format!("{:<terminal_width$}", text.as_ref())))
     }
 
     fn print_subheader<S: AsRef<str>>(&mut self, text: S) {
@@ -311,7 +274,8 @@ fn style_for_type<T: Into<String>>(
     } else if fg {
         text.with(color_for_type(transaction_type, false))
     } else {
-        text.on(color_for_type(transaction_type, true))
+        text.with(Color::Rgb { r: 0, g: 0, b: 0 })
+            .on(color_for_type(transaction_type, true))
     }
     .to_string()
 }
