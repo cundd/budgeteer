@@ -49,6 +49,10 @@ enum Commands {
         #[arg(short, long)]
         r#type: Option<TransactionType>,
 
+        /// Search-term to find in notes
+        #[arg(short, long)]
+        search: Option<String>,
+
         /// Level of verbosity
         #[arg(short, long, action = clap::ArgAction::Count)]
         verbosity: u8,
@@ -96,6 +100,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             input,
             from,
             to,
+            search,
             r#type,
             verbosity,
         }) => {
@@ -105,6 +110,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 input,
                 from.clone(),
                 to.clone(),
+                search.clone(),
                 *r#type,
                 Verbosity::from_int(*verbosity),
             )

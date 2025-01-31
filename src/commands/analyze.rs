@@ -17,6 +17,7 @@ pub async fn analyze<P: PrinterTrait>(
     input: &PathBuf,
     from: Option<String>,
     to: Option<String>,
+    search: Option<String>,
     transaction_type: Option<TransactionType>,
     verbosity: Verbosity,
 ) -> Res<()> {
@@ -34,7 +35,7 @@ pub async fn analyze<P: PrinterTrait>(
         None
     };
 
-    let filter_request = Request::new(from, to, transaction_type);
+    let filter_request = Request::new(from, to, transaction_type, search);
 
     if verbosity >= Verbosity::Info {
         printer.print_filter_request(&filter_request);

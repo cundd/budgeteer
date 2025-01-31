@@ -73,19 +73,25 @@ VALUES ( ?1, ?2, ?3, ?4, ?5 )
             .from
             .unwrap_or(NaiveDate::from_ymd_opt(1900, 1, 1).unwrap());
         let to = filter_request.to.unwrap_or(Utc::now().naive_utc().date());
+        let search = filter_request
+            .search
+            .map_or("%".to_string(), |s| format!("%{s}%"));
+
         let query = if let Some(transaction_type) = filter_request.transaction_type {
             sqlx::query_as(
-                r#"SELECT * FROM transactions WHERE (date > ? AND date <= ?) AND type = ?;"#,
+                r#"SELECT * FROM transactions WHERE (date > ? AND date <= ?) AND type = ? AND note LIKE ?;"#,
             )
             .bind(from)
             .bind(to)
             .bind(transaction_type)
+            .bind(search)
         } else {
-            println!("{:?}", filter_request.from.unwrap_or(NaiveDate::MIN));
-            println!("{:?}", filter_request.to.unwrap_or(NaiveDate::MAX));
-            sqlx::query_as(r#"SELECT * FROM transactions WHERE (date > ? AND date <= ?)"#)
-                .bind(from)
-                .bind(to)
+            sqlx::query_as(
+                r#"SELECT * FROM transactions WHERE (date > ? AND date <= ?) AND note LIKE ?;"#,
+            )
+            .bind(from)
+            .bind(to)
+            .bind(search)
         };
 
         let transactions: Vec<Transaction> = query.fetch_all(&self.database.pool).await?;

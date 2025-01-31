@@ -10,6 +10,8 @@ pub struct Request {
     pub from: Option<NaiveDate>,
     pub to: Option<NaiveDate>,
     pub transaction_type: Option<TransactionType>,
+
+    pub search: Option<String>,
 }
 
 impl Request {
@@ -17,16 +19,21 @@ impl Request {
         from: Option<NaiveDate>,
         to: Option<NaiveDate>,
         transaction_type: Option<TransactionType>,
+        search: Option<String>,
     ) -> Self {
         Request {
             from,
             to,
             transaction_type,
+            search,
         }
     }
 
     pub fn empty(&self) -> bool {
-        self.from.is_none() && self.to.is_none() && self.transaction_type.is_none()
+        self.from.is_none()
+            && self.to.is_none()
+            && self.transaction_type.is_none()
+            && self.search.is_none()
     }
 
     pub fn parse_from_date(input: &str) -> Res<NaiveDate> {
@@ -104,6 +111,10 @@ impl fmt::Display for Request {
         if let Some(to) = self.to {
             s.push_str("Bis:");
             s.push_str(&to.to_string());
+        }
+        if let Some(search) = &self.search {
+            s.push_str("Enthält:");
+            s.push_str(search);
         }
 
         f.write_str(s.as_str())
