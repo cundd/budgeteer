@@ -95,7 +95,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut printer = Printer::new();
     let base_currency = Currency::base();
 
-    match &cli.command {
+    match cli.command {
         Some(Commands::Analyze {
             input,
             from,
@@ -107,12 +107,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             commands::analyze::analyze(
                 &mut printer,
                 base_currency,
-                input,
-                from.clone(),
-                to.clone(),
-                search.clone(),
-                *r#type,
-                Verbosity::from_int(*verbosity),
+                &input,
+                from,
+                to,
+                search,
+                r#type,
+                Verbosity::from_int(verbosity),
             )
             .await?
         }
@@ -125,9 +125,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             commands::import::import(
                 &mut printer,
                 base_currency,
-                input,
-                output,
-                Verbosity::from_int(*verbosity),
+                &input,
+                &output,
+                Verbosity::from_int(verbosity),
             )
             .await?
         }
@@ -135,7 +135,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         Some(Commands::Wizard {
             output,
             verbosity: _,
-        }) => commands::wizard::wizard(&mut printer, base_currency, output).await?,
+        }) => commands::wizard::wizard(&mut printer, base_currency, &output).await?,
 
         Some(Commands::ShowTypes {}) => commands::show_types::show_types(&mut printer),
         None => {}
