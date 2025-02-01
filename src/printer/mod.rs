@@ -118,13 +118,26 @@ impl Printer {
     }
 
     fn print_grand_total(&mut self, base_currency: &Currency, transactions: &[Transaction]) {
-        writeln!(
-            self.output,
-            "TOTAL: {} {:.2}",
-            base_currency,
-            Calculator::sum(transactions)
-        )
-        .expect(STDOUT_WRITE_ERROR);
+        let totals = Calculator::totals(transactions);
+
+        self.println(
+            format!("Income:   {} {: >10.2}", base_currency, totals.income)
+                .with(color_for_income())
+                .to_string(),
+        );
+        self.println(
+            format!("Expenses: {} {: >10.2}", base_currency, totals.expenses)
+                .with(color_for_expenses())
+                .to_string(),
+        );
+
+        let total_formatted =
+            format!("{} {: >10.2}", base_currency, totals.total).with(if totals.total > 0.0 {
+                color_for_income()
+            } else {
+                color_for_expenses()
+            });
+        self.print_header(format!("TOTAL:    {}", total_formatted));
     }
 
     fn terminal_width(&self) -> usize {
@@ -433,6 +446,28 @@ fn color_for_type(transaction_type: TransactionType, light: bool) -> Color {
                 g: 170,
                 b: 201,
             },
+        }
+    }
+}
+fn color_for_income() -> Color {
+    if !has_true_color_support() {
+        Color::Green
+    } else {
+        Color::Rgb {
+            r: 6,
+            g: 168,
+            b: 59,
+        }
+    }
+}
+fn color_for_expenses() -> Color {
+    if !has_true_color_support() {
+        Color::Red
+    } else {
+        Color::Rgb {
+            r: 232,
+            g: 53,
+            b: 32,
         }
     }
 }

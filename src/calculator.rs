@@ -5,7 +5,36 @@ use crate::transaction::Transaction;
 
 pub struct Calculator {}
 
+pub struct Totals {
+    pub total: f64,
+    pub income: f64,
+    pub expenses: f64,
+}
+
 impl Calculator {
+    pub fn totals(transactions: &[Transaction]) -> Totals {
+        let mut income = 0.0;
+        let mut expenses = 0.0;
+        for transaction in transactions {
+            if let Some(a) = &transaction.base_amount {
+                if a.value > 0.0 {
+                    income += a.value
+                } else {
+                    expenses += a.value
+                }
+            }
+        }
+
+        let total = income + expenses;
+        let total = if total != -0.0 { total } else { 0.0 };
+
+        Totals {
+            total,
+            income,
+            expenses,
+        }
+    }
+
     pub fn sum(transactions: &[Transaction]) -> f64 {
         let sum = transactions
             .iter()
