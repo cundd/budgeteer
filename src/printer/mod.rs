@@ -1,6 +1,6 @@
 mod chart;
 
-use crate::calculator::Calculator;
+use crate::calculator::{Calculator, Totals};
 use crate::currency::{currency_data, Currency};
 use crate::filter::Request;
 use crate::month::Month;
@@ -49,6 +49,7 @@ impl Printer {
     pub fn new() -> Self {
         Printer { output: stdout() }
     }
+
     fn print_type_sum(&mut self, base_currency: &Currency, transactions: &[Transaction]) {
         // Skip currencies without any Transaction
         let currencies_to_output: Vec<Currency> = currency_data::all()
@@ -65,7 +66,8 @@ impl Printer {
         self.print_type_sum_header(&currencies_to_output);
 
         for transaction_type in TransactionType::all() {
-            let sum = Calculator::sum_for_type(transactions, transaction_type);
+            let Totals { expenses, .. } =
+                Calculator::totals_for_type(transactions, transaction_type);
 
             self.print(style_for_type(
                 transaction_type,
@@ -73,19 +75,22 @@ impl Printer {
                     " {:width$}│ {:<4} {: >10.2} ",
                     format!("{}", transaction_type),
                     base_currency.symbol,
-                    sum,
-                    width = 22
+                    expenses,
+                    width = 25
                 ),
                 false,
                 true,
             ));
 
             for currency in &currencies_to_output {
-                let sum =
-                    Calculator::sum_for_type_and_currency(transactions, transaction_type, currency);
+                let Totals { expenses, .. } = Calculator::totals_for_type_and_currency(
+                    transactions,
+                    transaction_type,
+                    currency,
+                );
                 self.print(style_for_type(
                     transaction_type,
-                    format!("│ {:<3} {: >9.2} ", currency.symbol, sum),
+                    format!("│ {:<3} {: >9.2} ", currency.symbol, expenses),
                     false,
                     true,
                 ));
@@ -102,11 +107,13 @@ impl Printer {
     }
 
     fn print_type_sum_header(&mut self, currencies_to_output: &[Currency]) {
+        self.print_header("Expenses per type");
+        self.print_newline();
         self.print(style_header(format!(
             " {:width$}│ {} ",
             "Typ",
             "∑ Basis Währung",
-            width = 22
+            width = 25
         )));
 
         for currency in currencies_to_output {
@@ -213,14 +220,14 @@ Notiz       : {}
             let major_types = Calculator::major_types(transactions);
             writeln!(
                 self.output,
-                "{:width$}: {} {: >8.2} {}",
-                format!("{}", month),
+                "{:width$}: {} {: >9.2} {}",
+                month.to_string(),
                 base_currency,
                 Calculator::sum(transactions),
                 style_for_type(
                     major_types.max_expenses.transaction_type,
                     format!(
-                        " {} {: >8.2} ",
+                        " {} {: >9.2} ",
                         major_types.max_expenses.transaction_type.identifier(),
                         major_types.max_expenses.value
                     ),
@@ -236,7 +243,7 @@ Notiz       : {}
         writeln!(
             self.output,
             "{:width$}: {} {: >8.2}",
-            format!("{}", month),
+            month.to_string(),
             base_currency,
             0,
             width = 12

@@ -2,7 +2,7 @@ use crossterm::tty::IsTty;
 use crossterm::QueueableCommand;
 
 use super::{style_for_type, Printer, PrinterTrait};
-use crate::calculator::Calculator;
+use crate::calculator::{Calculator, Totals};
 use crate::currency::Currency;
 use crate::transaction::transaction_type::{TransactionType, NUMBER_OF_TYPES};
 use crate::transaction::Transaction;
@@ -17,14 +17,15 @@ pub(super) fn print_bar_chart(
     _base_currency: &Currency,
     transactions: &[Transaction],
 ) -> Result<(), std::io::Error> {
-    let total: f64 = Calculator::sum(transactions);
+    let totals = Calculator::totals(transactions);
+    let total: f64 = totals.expenses;
 
     let mut sum_map = HashMap::new();
     for transaction_type in TransactionType::all() {
-        let sum = Calculator::sum_for_type(transactions, transaction_type);
+        let Totals { expenses, .. } = Calculator::totals_for_type(transactions, transaction_type);
 
         let percent = if total != 0.0 {
-            100.0 * sum / total
+            100.0 * expenses / total
         } else {
             0.0
         };

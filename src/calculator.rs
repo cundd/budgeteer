@@ -5,6 +5,7 @@ use crate::transaction::Transaction;
 
 pub struct Calculator {}
 
+#[derive(Debug)]
 pub struct Totals {
     pub total: f64,
     pub income: f64,
@@ -86,44 +87,45 @@ impl Calculator {
         }
     }
 
-    pub fn sum_for_type(transactions: &[Transaction], transaction_type: TransactionType) -> f64 {
-        let sum = transactions
-            .iter()
-            .filter_map(|i| {
-                if i.transaction_type() == transaction_type {
-                    i.base_amount().map(|a| a.value())
-                } else {
-                    None
-                }
-            })
-            .sum();
-
-        if sum != -0.0 {
-            sum
-        } else {
-            0.0
-        }
+    pub fn totals_for_type(
+        transactions: &[Transaction],
+        transaction_type: TransactionType,
+    ) -> Totals {
+        Self::totals(
+            transactions
+                .iter()
+                .filter_map(|t| {
+                    if t.transaction_type == transaction_type {
+                        Some(t.clone())
+                    } else {
+                        None
+                    }
+                })
+                .collect::<Vec<Transaction>>()
+                .as_ref(),
+        )
     }
 
-    pub fn sum_for_type_and_currency(
+    pub fn totals_for_type_and_currency(
         transactions: &[Transaction],
         transaction_type: TransactionType,
         currency: &Currency,
-    ) -> f64 {
-        let sum = transactions
-            .iter()
-            .filter(|i| {
-                i.transaction_type() == transaction_type
-                    && i.amount_ref().currency_ref() == currency
-            })
-            .map(|i| i.amount_ref().value())
-            .sum();
-
-        if sum != -0.0 {
-            sum
-        } else {
-            0.0
-        }
+    ) -> Totals {
+        Self::totals(
+            transactions
+                .iter()
+                .filter_map(|t| {
+                    if t.transaction_type == transaction_type
+                        && t.amount_ref().currency_ref() == currency
+                    {
+                        Some(t.clone())
+                    } else {
+                        None
+                    }
+                })
+                .collect::<Vec<Transaction>>()
+                .as_ref(),
+        )
     }
 
     #[allow(unused)]
