@@ -11,6 +11,7 @@ use crate::{
 use chrono::prelude::*;
 use std::path::PathBuf;
 
+#[allow(clippy::too_many_arguments)]
 pub async fn analyze<P: PrinterTrait>(
     printer: &mut P,
     base_currency: Currency,
