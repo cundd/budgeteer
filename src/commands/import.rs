@@ -16,6 +16,7 @@ pub async fn import<P: PrinterTrait>(
     base_currency: Currency,
     input: &PathBuf,
     output: &PathBuf,
+    no_interaction: bool,
     verbosity: Verbosity,
 ) -> Res<()> {
     let input_file = normalize_file_path(input)?;
@@ -28,22 +29,25 @@ pub async fn import<P: PrinterTrait>(
         .map(|e| e.to_str().expect("Path is not UTF8"))
     {
         Some("json") => import::json::get_transactions(input_file, |mut transaction| {
-            printer.print_header("Complete the following transaction details");
-            printer.print_transaction(&base_currency, &transaction);
+            if !no_interaction {
+                printer.print_header("Complete the following transaction details");
+                printer.print_transaction(&base_currency, &transaction);
 
-            let possible_duplicates =
-                DuplicateChecker::get_possible_duplicates(&transaction, &current_transactions);
-            if !possible_duplicates.is_empty() {
-                printer.print_warning("⚠︎ Found possible duplicates:");
-                for possible_duplicate in possible_duplicates {
-                    printer.print_transaction(&base_currency, possible_duplicate);
+                let possible_duplicates =
+                    DuplicateChecker::get_possible_duplicates(&transaction, &current_transactions);
+                if !possible_duplicates.is_empty() {
+                    printer.print_warning("⚠︎ Found possible duplicates:");
+                    for possible_duplicate in possible_duplicates {
+                        printer.print_transaction(&base_currency, possible_duplicate);
+                    }
                 }
-            }
 
-            let selected_transaction_type = Wizard::new().read_transaction_type_or_skip(true)?;
-            match selected_transaction_type {
-                Some(i) => transaction.transaction_type = i,
-                None => return Ok(None),
+                let selected_transaction_type =
+                    Wizard::new().read_transaction_type_or_skip(true)?;
+                match selected_transaction_type {
+                    Some(i) => transaction.transaction_type = i,
+                    None => return Ok(None),
+                }
             }
 
             Ok(Some(transaction))

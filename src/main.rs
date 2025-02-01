@@ -80,6 +80,10 @@ enum Commands {
         #[arg(value_name = "DATABASE")]
         output: PathBuf,
 
+        /// Require no user input during import
+        #[arg(long)]
+        no_interaction: bool,
+
         /// Level of verbosity
         #[arg(short, long, action = clap::ArgAction::Count)]
         verbosity: u8,
@@ -120,6 +124,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         Some(Commands::Import {
             input,
             output,
+            no_interaction,
             verbosity,
         }) => {
             commands::import::import(
@@ -127,6 +132,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 base_currency,
                 &input,
                 &output,
+                no_interaction,
                 Verbosity::from_int(verbosity),
             )
             .await?
