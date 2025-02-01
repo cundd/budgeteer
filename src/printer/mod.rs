@@ -1,4 +1,5 @@
 mod chart;
+mod color;
 
 use crate::calculator::{Calculator, Totals};
 use crate::currency::{currency_data, Currency};
@@ -7,9 +8,9 @@ use crate::month::Month;
 use crate::transaction::transaction_type::TransactionType;
 use crate::transaction::{contains_transaction_in_currency, Transaction};
 use chart::print_bar_chart;
+use color::{color_for_expenses, color_for_income, color_for_type};
 use crossterm::style::Color;
 use crossterm::style::Stylize;
-use std::env;
 use std::io::{stdout, Write};
 
 static STDOUT_WRITE_ERROR: &str = "Could not write to stdout";
@@ -304,186 +305,6 @@ fn style_for_type<T: Into<String>>(
 
 fn style_header<T: Into<String>>(text: T) -> String {
     text.into().with(Color::White).on(Color::Black).to_string()
-}
-
-fn color_for_type(transaction_type: TransactionType, light: bool) -> Color {
-    if !has_true_color_support() {
-        return if light {
-            match transaction_type {
-                TransactionType::Body => Color::AnsiValue(81),
-                TransactionType::Car => Color::AnsiValue(9),
-                TransactionType::Clothes => Color::AnsiValue(10),
-                TransactionType::Eat => Color::AnsiValue(11),
-                TransactionType::Gas => Color::AnsiValue(12),
-                TransactionType::Fun => Color::AnsiValue(13),
-                TransactionType::Health => Color::AnsiValue(14),
-                TransactionType::Home => Color::AnsiValue(73),
-                TransactionType::Telecommunication => Color::AnsiValue(27),
-                TransactionType::Donation => Color::AnsiValue(207),
-                TransactionType::Unknown => Color::AnsiValue(57),
-            }
-        } else {
-            match transaction_type {
-                TransactionType::Body => Color::AnsiValue(39),
-                TransactionType::Car => Color::AnsiValue(1),
-                TransactionType::Clothes => Color::AnsiValue(2),
-                TransactionType::Eat => Color::AnsiValue(3),
-                TransactionType::Gas => Color::AnsiValue(4),
-                TransactionType::Fun => Color::AnsiValue(5),
-                TransactionType::Health => Color::AnsiValue(6),
-                TransactionType::Home => Color::AnsiValue(17),
-                TransactionType::Telecommunication => Color::AnsiValue(17),
-                TransactionType::Donation => Color::AnsiValue(171),
-                TransactionType::Unknown => Color::AnsiValue(53),
-            }
-        };
-    }
-    if light {
-        match transaction_type {
-            TransactionType::Body => Color::Rgb {
-                r: 56,
-                g: 255,
-                b: 219,
-            },
-            TransactionType::Car => Color::Rgb {
-                r: 112,
-                g: 255,
-                b: 81,
-            },
-            TransactionType::Clothes => Color::Rgb {
-                r: 177,
-                g: 255,
-                b: 79,
-            },
-            TransactionType::Eat => Color::Rgb {
-                r: 225,
-                g: 255,
-                b: 79,
-            },
-            TransactionType::Gas => Color::Rgb {
-                r: 255,
-                g: 237,
-                b: 61,
-            },
-            TransactionType::Fun => Color::Rgb {
-                r: 255,
-                g: 200,
-                b: 53,
-            },
-            TransactionType::Health => Color::Rgb {
-                r: 255,
-                g: 173,
-                b: 45,
-            },
-            TransactionType::Home => Color::Rgb {
-                r: 255,
-                g: 136,
-                b: 126,
-            },
-            TransactionType::Telecommunication => Color::Rgb {
-                r: 255,
-                g: 120,
-                b: 186,
-            },
-            TransactionType::Donation => Color::Rgb {
-                r: 215,
-                g: 151,
-                b: 255,
-            },
-            TransactionType::Unknown => Color::Rgb {
-                r: 94,
-                g: 228,
-                b: 255,
-            },
-        }
-    } else {
-        match transaction_type {
-            TransactionType::Body => Color::Rgb {
-                r: 17,
-                g: 204,
-                b: 170,
-            },
-            TransactionType::Car => Color::Rgb {
-                r: 84,
-                g: 189,
-                b: 60,
-            },
-            TransactionType::Clothes => Color::Rgb {
-                r: 132,
-                g: 189,
-                b: 58,
-            },
-            TransactionType::Eat => Color::Rgb {
-                r: 167,
-                g: 189,
-                b: 58,
-            },
-            TransactionType::Gas => Color::Rgb {
-                r: 189,
-                g: 174,
-                b: 45,
-            },
-            TransactionType::Fun => Color::Rgb {
-                r: 189,
-                g: 146,
-                b: 40,
-            },
-            TransactionType::Health => Color::Rgb {
-                r: 189,
-                g: 127,
-                b: 34,
-            },
-            TransactionType::Home => Color::Rgb {
-                r: 189,
-                g: 101,
-                b: 94,
-            },
-            TransactionType::Telecommunication => Color::Rgb {
-                r: 189,
-                g: 91,
-                b: 140,
-            },
-            TransactionType::Donation => Color::Rgb {
-                r: 159,
-                g: 113,
-                b: 189,
-            },
-            TransactionType::Unknown => Color::Rgb {
-                r: 12,
-                g: 170,
-                b: 201,
-            },
-        }
-    }
-}
-fn color_for_income() -> Color {
-    if !has_true_color_support() {
-        Color::Green
-    } else {
-        Color::Rgb {
-            r: 6,
-            g: 168,
-            b: 59,
-        }
-    }
-}
-fn color_for_expenses() -> Color {
-    if !has_true_color_support() {
-        Color::Red
-    } else {
-        Color::Rgb {
-            r: 232,
-            g: 53,
-            b: 32,
-        }
-    }
-}
-
-fn has_true_color_support() -> bool {
-    match env::var("COLORTERM") {
-        Ok(v) => v == "truecolor",
-        Err(_) => false,
-    }
 }
 
 fn get_prepared_note(transaction: &Transaction) -> String {
