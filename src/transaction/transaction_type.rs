@@ -2,7 +2,7 @@ use crate::error::Error;
 use std::str::FromStr;
 use std::{char, fmt};
 
-pub const NUMBER_OF_TYPES: usize = 11;
+pub const NUMBER_OF_TYPES: usize = 14;
 
 #[derive(Clone, PartialOrd, PartialEq, Eq, Copy, Debug, Hash, clap::ValueEnum, sqlx::Type)]
 #[repr(u8)]
@@ -15,6 +15,8 @@ pub enum TransactionType {
     Clothes = b'C',
     // "E" => Eat / Essen
     Eat = b'E',
+    // "U" => Education / Ausbildung
+    Education = b'N',
     // "T" => Gas / Tanken
     Gas = b'T',
     // "F" => Fun / Hobby
@@ -25,8 +27,12 @@ pub enum TransactionType {
     Home = b'H',
     // "I" => Internet / Handy / TV
     Telecommunication = b'I',
+    // "S" => Insurance / Versicherung
+    Insurance = b'S',
     // "D" => Spende
     Donation = b'D',
+    // "T" => Tax / Steuern
+    Tax = b'X',
 
     // Unknown
     Unknown = b'U',
@@ -39,14 +45,16 @@ impl TransactionType {
             "B" | "BODY" | "COSMETICS" => TransactionType::Body,
             "C" | "K" | "CLOTHES" | "KLEIDUNG" => TransactionType::Clothes,
             "E" | "EAT" | "ESSEN" => TransactionType::Eat,
+            "N" | "EDUCATION" | "AUSBILDUNG" => TransactionType::Education,
             "F" | "FUN" | "HOBBY" => TransactionType::Fun,
             "T" | "GAS" | "TANKEN" => TransactionType::Gas,
             "G" | "HEALTH" | "GESUNDHEIT" => TransactionType::Health,
             "D" | "DONATION" | "SPENDE" => TransactionType::Donation,
-            "H" | "HOME" | "HAUS" => TransactionType::Home,
             "I" | "TELECOMMUNICATION" | "INTERNET" | "HANDY" | "TV" => {
                 TransactionType::Telecommunication
             }
+            "S" | "INSURANCE" | "VERSICHERUNG" => TransactionType::Insurance,
+            "X" | "TAX" | "TAXES" | "STEUERN" | "STEUER" => TransactionType::Tax,
             _ => TransactionType::Unknown,
         }
     }
@@ -62,12 +70,15 @@ impl TransactionType {
             TransactionType::Car,
             TransactionType::Clothes,
             TransactionType::Eat,
+            TransactionType::Education,
             TransactionType::Gas,
             TransactionType::Fun,
             TransactionType::Health,
             TransactionType::Home,
+            TransactionType::Insurance,
             TransactionType::Telecommunication,
             TransactionType::Donation,
+            TransactionType::Tax,
         ]
     }
 
@@ -78,12 +89,15 @@ impl TransactionType {
             TransactionType::Car,
             TransactionType::Clothes,
             TransactionType::Eat,
+            TransactionType::Education,
             TransactionType::Gas,
             TransactionType::Fun,
             TransactionType::Health,
             TransactionType::Home,
             TransactionType::Telecommunication,
+            TransactionType::Insurance,
             TransactionType::Donation,
+            TransactionType::Tax,
             TransactionType::Unknown,
         ]
     }
@@ -94,12 +108,15 @@ impl TransactionType {
             TransactionType::Car => "Car / Auto",
             TransactionType::Clothes => "Clothes / Kleidung",
             TransactionType::Eat => "Food / Essen",
+            TransactionType::Education => "Education / Ausbildung",
             TransactionType::Fun => "Fun / Freunde / Hobby",
             TransactionType::Gas => "Gas / Tanken",
             TransactionType::Health => "Health / Gesundheit",
             TransactionType::Home => "Home / Haus",
             TransactionType::Telecommunication => "Internet / Handy / TV",
+            TransactionType::Insurance => "Insurance / Versicherung",
             TransactionType::Donation => "Donation / Spende",
+            TransactionType::Tax => "Tax / Steuer",
             TransactionType::Unknown => "Diverse",
         }
     }

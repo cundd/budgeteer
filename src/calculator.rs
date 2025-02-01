@@ -195,12 +195,15 @@ struct TransactionTypeScore {
     car: IncomeAndExpenses,
     clothes: IncomeAndExpenses,
     eat: IncomeAndExpenses,
+    education: IncomeAndExpenses,
     gas: IncomeAndExpenses,
     fun: IncomeAndExpenses,
     health: IncomeAndExpenses,
     home: IncomeAndExpenses,
+    insurance: IncomeAndExpenses,
     telecommunication: IncomeAndExpenses,
     donation: IncomeAndExpenses,
+    tax: IncomeAndExpenses,
     unknown: IncomeAndExpenses,
 }
 
@@ -220,12 +223,15 @@ impl TransactionTypeScore {
             TransactionType::Car => self.car.push(amount),
             TransactionType::Clothes => self.clothes.push(amount),
             TransactionType::Eat => self.eat.push(amount),
+            TransactionType::Education => self.education.push(amount),
             TransactionType::Gas => self.gas.push(amount),
             TransactionType::Fun => self.fun.push(amount),
             TransactionType::Health => self.health.push(amount),
             TransactionType::Home => self.home.push(amount),
+            TransactionType::Insurance => self.insurance.push(amount),
             TransactionType::Telecommunication => self.telecommunication.push(amount),
             TransactionType::Donation => self.donation.push(amount),
+            TransactionType::Tax => self.tax.push(amount),
             TransactionType::Unknown => self.unknown.push(amount),
         }
     }
@@ -242,12 +248,15 @@ impl IntoIterator for TransactionTypeScore {
             (TransactionType::Car, self.car),
             (TransactionType::Clothes, self.clothes),
             (TransactionType::Eat, self.eat),
+            (TransactionType::Education, self.education),
             (TransactionType::Gas, self.gas),
             (TransactionType::Fun, self.fun),
             (TransactionType::Health, self.health),
             (TransactionType::Home, self.home),
+            (TransactionType::Insurance, self.insurance),
             (TransactionType::Telecommunication, self.telecommunication),
             (TransactionType::Donation, self.donation),
+            (TransactionType::Tax, self.tax),
             (TransactionType::Unknown, self.unknown),
         ]
         .into_iter()
