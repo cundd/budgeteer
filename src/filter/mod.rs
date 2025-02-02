@@ -10,23 +10,36 @@ pub struct Request {
     pub from: Option<NaiveDate>,
     pub to: Option<NaiveDate>,
     pub transaction_type: Option<TransactionType>,
-
     pub search: Option<String>,
+    pub exclude: Option<String>,
 }
 
 impl Request {
-    pub fn new(
-        from: Option<NaiveDate>,
-        to: Option<NaiveDate>,
+    pub fn from_arguments(
+        from: Option<String>,
+        to: Option<String>,
         transaction_type: Option<TransactionType>,
         search: Option<String>,
-    ) -> Self {
-        Request {
+        exclude: Option<String>,
+    ) -> Res<Self> {
+        let from = if let Some(from) = from {
+            Some(Self::parse_from_date(&from)?)
+        } else {
+            None
+        };
+        let to = if let Some(to) = to {
+            Some(Request::parse_to_date(&to)?)
+        } else {
+            None
+        };
+
+        Ok(Self {
             from,
             to,
             transaction_type,
             search,
-        }
+            exclude,
+        })
     }
 
     pub fn empty(&self) -> bool {
@@ -36,7 +49,7 @@ impl Request {
             && self.search.is_none()
     }
 
-    pub fn parse_from_date(input: &str) -> Res<NaiveDate> {
+    fn parse_from_date(input: &str) -> Res<NaiveDate> {
         if input.is_empty() {
             return Err(Error::Argument("Date input must not be empty".to_string()));
         }
@@ -60,7 +73,7 @@ impl Request {
             .map_err(build_date_parsing_error(input))
     }
 
-    pub fn parse_to_date(input: &str) -> Res<NaiveDate> {
+    fn parse_to_date(input: &str) -> Res<NaiveDate> {
         if input.is_empty() {
             return Err(Error::Argument("Date input must not be empty".to_string()));
         }

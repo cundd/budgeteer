@@ -77,21 +77,28 @@ VALUES ( ?1, ?2, ?3, ?4, ?5 )
             .search
             .map_or("%".to_string(), |s| format!("%{s}%"));
 
+        let exclude = filter_request.exclude.map_or(
+            "a string that should not exist in the text <>< -##".to_string(),
+            |s| format!("%{s}%"),
+        );
+
         let query = if let Some(transaction_type) = filter_request.transaction_type {
             sqlx::query_as(
-                r#"SELECT * FROM transactions WHERE (date > ? AND date <= ?) AND type = ? AND note LIKE ?;"#,
+                r#"SELECT * FROM transactions WHERE (date > ? AND date <= ?) AND type = ? AND note LIKE ? AND note NOT LIKE ?;"#,
             )
             .bind(from)
             .bind(to)
             .bind(transaction_type)
             .bind(search)
+            .bind(exclude)
         } else {
             sqlx::query_as(
-                r#"SELECT * FROM transactions WHERE (date > ? AND date <= ?) AND note LIKE ?;"#,
+                r#"SELECT * FROM transactions WHERE (date > ? AND date <= ?) AND note LIKE ? AND note NOT LIKE ?;"#,
             )
             .bind(from)
             .bind(to)
             .bind(search)
+            .bind(exclude)
         };
 
         let transactions: Vec<Transaction> = query.fetch_all(&self.database.pool).await?;

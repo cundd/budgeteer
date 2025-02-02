@@ -53,6 +53,10 @@ enum Commands {
         #[arg(short, long)]
         search: Option<String>,
 
+        /// Exclude transactions containing this search-term in notes
+        #[arg(short, long)]
+        exclude: Option<String>,
+
         /// Level of verbosity
         #[arg(short, long, action = clap::ArgAction::Count)]
         verbosity: u8,
@@ -105,6 +109,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             from,
             to,
             search,
+            exclude,
             r#type,
             verbosity,
         }) => {
@@ -115,6 +120,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 from,
                 to,
                 search,
+                exclude,
                 r#type,
                 Verbosity::from_int(verbosity),
             )

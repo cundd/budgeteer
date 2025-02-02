@@ -19,24 +19,13 @@ pub async fn analyze<P: PrinterTrait>(
     from: Option<String>,
     to: Option<String>,
     search: Option<String>,
+    exclude: Option<String>,
     transaction_type: Option<TransactionType>,
     verbosity: Verbosity,
 ) -> Res<()> {
     let input_file = normalize_file_path(input)?;
     let repository = TransactionRepository::new(&input_file).await?;
-
-    let from = if let Some(from) = from {
-        Some(Request::parse_from_date(&from)?)
-    } else {
-        None
-    };
-    let to = if let Some(to) = to {
-        Some(Request::parse_to_date(&to)?)
-    } else {
-        None
-    };
-
-    let filter_request = Request::new(from, to, transaction_type, search);
+    let filter_request = Request::from_arguments(from, to, transaction_type, search, exclude)?;
 
     if verbosity >= Verbosity::Info {
         printer.print_filter_request(&filter_request);
