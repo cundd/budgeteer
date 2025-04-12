@@ -106,9 +106,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     match cli.command {
         Some(Commands::Analyze {
             input,
-            from,
             to,
             search,
+            from,
             exclude,
             r#type,
             verbosity,
