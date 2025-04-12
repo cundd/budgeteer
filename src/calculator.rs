@@ -204,6 +204,7 @@ struct TransactionTypeScore {
     telecommunication: IncomeAndExpenses,
     donation: IncomeAndExpenses,
     tax: IncomeAndExpenses,
+    banking: IncomeAndExpenses,
     unknown: IncomeAndExpenses,
 }
 
@@ -232,6 +233,7 @@ impl TransactionTypeScore {
             TransactionType::Telecommunication => self.telecommunication.push(amount),
             TransactionType::Donation => self.donation.push(amount),
             TransactionType::Tax => self.tax.push(amount),
+            TransactionType::Banking => self.banking.push(amount),
             TransactionType::Unknown => self.unknown.push(amount),
         }
     }
@@ -257,6 +259,7 @@ impl IntoIterator for TransactionTypeScore {
             (TransactionType::Telecommunication, self.telecommunication),
             (TransactionType::Donation, self.donation),
             (TransactionType::Tax, self.tax),
+            (TransactionType::Banking, self.banking),
             (TransactionType::Unknown, self.unknown),
         ]
         .into_iter()

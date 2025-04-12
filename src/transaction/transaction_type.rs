@@ -2,7 +2,7 @@ use crate::error::Error;
 use std::str::FromStr;
 use std::{char, fmt};
 
-pub const NUMBER_OF_TYPES: usize = 14;
+pub const NUMBER_OF_TYPES: usize = 15;
 
 #[derive(Clone, PartialOrd, PartialEq, Eq, Copy, Debug, Hash, clap::ValueEnum, sqlx::Type)]
 #[repr(u8)]
@@ -33,6 +33,8 @@ pub enum TransactionType {
     Donation = b'D',
     // "T" => Tax / Steuern
     Tax = b'X',
+    // "J" => Banking
+    Banking = b'J',
 
     // Unknown
     Unknown = b'U',
@@ -55,6 +57,7 @@ impl TransactionType {
             }
             "S" | "INSURANCE" | "VERSICHERUNG" => TransactionType::Insurance,
             "X" | "TAX" | "TAXES" | "STEUERN" | "STEUER" => TransactionType::Tax,
+            "J" | "BANK" | "BANKING" => TransactionType::Banking,
             _ => TransactionType::Unknown,
         }
     }
@@ -79,6 +82,7 @@ impl TransactionType {
             TransactionType::Telecommunication,
             TransactionType::Donation,
             TransactionType::Tax,
+            TransactionType::Banking,
         ]
     }
 
@@ -98,6 +102,7 @@ impl TransactionType {
             TransactionType::Insurance,
             TransactionType::Donation,
             TransactionType::Tax,
+            TransactionType::Banking,
             TransactionType::Unknown,
         ]
     }
@@ -117,6 +122,7 @@ impl TransactionType {
             TransactionType::Insurance => "Insurance / Versicherung",
             TransactionType::Donation => "Donation / Spende",
             TransactionType::Tax => "Tax / Steuer",
+            TransactionType::Banking => "Bank / Banking",
             TransactionType::Unknown => "Diverse",
         }
     }
