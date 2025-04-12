@@ -57,6 +57,7 @@ impl TransactionType {
             }
             "S" | "INSURANCE" | "VERSICHERUNG" => TransactionType::Insurance,
             "X" | "TAX" | "TAXES" | "STEUERN" | "STEUER" => TransactionType::Tax,
+            "H" | "HOUSE" | "HOME" => TransactionType::Home,
             "J" | "BANK" | "BANKING" => TransactionType::Banking,
             _ => TransactionType::Unknown,
         }
