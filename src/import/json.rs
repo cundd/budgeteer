@@ -28,7 +28,7 @@ impl TransactionJson {
             Amount::new(self.amount, currency),
             None,
             TransactionType::Unknown,
-            Some(self.note),
+            Some(self.note.trim().to_owned()),
         ))
     }
 }
